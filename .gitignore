@@ -16,3 +16,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Test coverage reports
+version-service/coverage/
