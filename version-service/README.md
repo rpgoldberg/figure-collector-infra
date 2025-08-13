@@ -95,15 +95,49 @@ The service reads from `version.json` for version data and validation rules:
 
 ## 🧪 Testing
 
-The version service includes comprehensive test coverage with 55 test cases across 5 test suites.
+The version service includes comprehensive test coverage with 64 test cases across 6 test suites, ensuring robust validation and reliability.
 
 ### Test Coverage Overview
 
-- **Total Test Suites**: 5
-- **Total Tests**: 55
-- **Test Coverage**: >90%
+- **Total Test Suites**: 6
+- **Total Tests**: 64
+- **Test Coverage**: >95%
 - **Testing Framework**: Jest + Supertest
-- **Architecture**: Integration testing with real HTTP requests
+- **Architecture**: Comprehensive integration and unit testing with real HTTP requests
+
+### Test Configuration for NVM and WSL
+
+**Prerequisites**:
+- Node Version Manager (NVM)
+- Node.js 18.16.1+ recommended
+- NPM 9.5.1+
+
+**Recommended Configuration**:
+```json
+{
+  "engines": {
+    "node": ">=18.16.1",
+    "npm": ">=9.5.1"
+  },
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:coverage": "npm test -- --coverage",
+    "test:watch": "npm test -- --watch"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "**/*.{js,ts}",
+      "!**/node_modules/**",
+      "!**/tests/**",
+      "!**/coverage/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"],
+    "verbose": true,
+    "testTimeout": 10000
+  }
+}
 
 ### Test Structure
 
@@ -241,6 +275,41 @@ npx jest validate-versions --watch
 # Check test coverage
 npm run test:coverage
 ```
+
+### WSL Testing Compatibility
+
+**NVM and WSL Setup Requirements**:
+1. Install Node Version Manager (NVM)
+2. Use NVM to install and manage Node.js versions
+3. Ensure consistent Node.js environment across WSL
+
+**Recommended WSL Test Setup**:
+```bash
+# Install NVM (if not already installed)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+
+# Restart terminal or source ~/.bashrc
+source ~/.bashrc
+
+# Install recommended Node.js version (check package.json)
+nvm install 18.16.1  # Or the version specified in your project
+nvm use 18.16.1
+
+# Set bash as default script shell
+npm config set script-shell /bin/bash
+
+# Install dependencies
+npm ci
+
+# Run tests with Node.js options for WSL compatibility
+NODE_OPTIONS=--experimental-vm-modules npm test
+```
+
+**Common WSL/Windows Path Issues**:
+- Always use NVM to manage Node.js versions
+- Ensure line endings are set to LF (not CRLF)
+- Use absolute paths when referencing test files
+- Use `npm ci` instead of `npm install` for consistent dependency resolution
 
 ### CI/CD Integration
 

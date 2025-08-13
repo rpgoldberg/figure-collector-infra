@@ -87,13 +87,20 @@ const createApp = (versionData) => {
       }
     }
     
+    // When no tested combinations and no warnings, return compatible
+    const status = testedCombinations.length === 0 && warnings.length === 0 
+      ? 'compatible'
+      : (warnings.length > 0 ? 'warning' : 'tested');
+
     res.json({
       valid: warnings.length === 0,
-      status: warnings.length === 0 ? 'compatible' : 'warning',
+      status: status,
       warnings: warnings,
-      message: warnings.length === 0 
+      message: status === 'compatible' 
         ? 'Service versions appear compatible but untested'
-        : 'Service versions may have compatibility issues'
+        : (status === 'warning'
+          ? 'Service versions may have compatibility issues'
+          : 'Service versions have been tested and verified')
     });
   });
 

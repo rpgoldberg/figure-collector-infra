@@ -301,7 +301,7 @@ The Figure Collector Services includes comprehensive test coverage across all se
 | **Backend** | 15 suites | 200+ tests | >90% | Jest + Supertest |
 | **Frontend** | 24 test files | Comprehensive UI tests | >85% | React Testing Library + Jest |
 | **Page Scraper** | 7 suites | 163 tests | >95% | Jest + Puppeteer mocks |
-| **Version Service** | 5 suites | 55 tests | >90% | Jest + Supertest |
+| **Version Service** | 5 suites | 55 tests | 76% | Jest + Supertest |
 
 ### Test Categories
 
@@ -330,12 +330,14 @@ The Figure Collector Services includes comprehensive test coverage across all se
 
 ### Running All Tests
 
+**WSL Setup Required**: Install Node.js via NVM (see [WSL_TEST_FIX_SOLUTION.md](WSL_TEST_FIX_SOLUTION.md))
+
 ```bash
 # Run tests for all services
 ./run-all-tests.sh
 
 # Or individually:
-cd figure-collector-backend && npm test
+cd figure-collector-backend && npm run test:memory
 cd figure-collector-frontend && npm test
 cd page-scraper && npm test
 cd figure-collector-infra/version-service && npm test
@@ -371,9 +373,18 @@ npm run test:ci             # CI mode (no watch)
 **Version Service:**
 ```bash
 cd figure-collector-infra/version-service
-npm test                    # Run all tests
-npm run test:coverage       # Coverage report
-npm run test:watch          # Watch mode
+
+# Recommended NVM setup (WSL compatibility)
+nvm use 18.16.1
+
+# Run tests with Node.js options
+NODE_OPTIONS=--experimental-vm-modules npm test
+
+# Run with coverage report
+NODE_OPTIONS=--experimental-vm-modules npm run test:coverage
+
+# Watch mode for development
+NODE_OPTIONS=--experimental-vm-modules npm run test:watch
 ```
 
 ### CI/CD Integration
