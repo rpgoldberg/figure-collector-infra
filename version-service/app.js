@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const semver = require('semver');
 
 // Create Express app
 const createApp = (versionData) => {
@@ -51,57 +52,63 @@ const createApp = (versionData) => {
       return res.status(500).json({ error: 'Compatibility data not available' });
     }
     
-    // Check if this combination exists in tested combinations
     const testedCombinations = versionData.compatibility.testedCombinations || [];
+    const dependencies = versionData.dependencies || {};
+    const warnings = [];
+    let status = 'compatible';
+    let message = 'Service versions appear compatible but untested';
+    let valid = true;
+    let verifiedDate = null;
+    
+    // Check individual service versions against expected ranges
+    if (dependencies.backend && dependencies.backend.scraper) {
+      const requiredScraperVersion = dependencies.backend.scraper;
+      if (!scraper || !semver.satisfies(scraper, requiredScraperVersion)) {
+        warnings.push(`Backend expects scraper ${requiredScraperVersion}, got ${scraper || 'no version'}`);
+      }
+    }
+    
+    if (dependencies.frontend && dependencies.frontend.backend) {
+      const requiredBackendVersion = dependencies.frontend.backend;
+      if (!backend || !semver.satisfies(backend, requiredBackendVersion)) {
+        warnings.push(`Frontend expects backend ${requiredBackendVersion}, got ${backend || 'no version'}`);
+      }
+    }
+    
+    // Find matching tested combination
     const matchingCombo = testedCombinations.find(combo => 
       combo.backend === backend && 
       combo.frontend === frontend && 
       combo.scraper === scraper
     );
     
-    if (matchingCombo) {
-      return res.json({
-        valid: true,
-        status: 'tested',
-        verified: matchingCombo.verified,
-        message: 'This service combination has been tested and verified'
-      });
+    // Set status based on warnings and matching combination
+    if (warnings.length > 0) {
+      status = 'warning';
+      message = 'Service versions may have compatibility issues';
+      valid = false;
     }
-    
-    // Check individual service versions against expected ranges
-    const dependencies = versionData.dependencies || {};
-    const warnings = [];
-    
-    // Check if versions meet dependency requirements (simplified semver check)
-    if (dependencies.backend && dependencies.backend.scraper) {
-      const requiredScraperVersion = dependencies.backend.scraper.replace('^', '');
-      if (scraper !== requiredScraperVersion) {
-        warnings.push(`Backend expects scraper ${dependencies.backend.scraper}, got ${scraper}`);
-      }
-    }
-    
-    if (dependencies.frontend && dependencies.frontend.backend) {
-      const requiredBackendVersion = dependencies.frontend.backend.replace('^', '');
-      if (backend !== requiredBackendVersion) {
-        warnings.push(`Frontend expects backend ${dependencies.frontend.backend}, got ${backend}`);
-      }
-    }
-    
-    // When no tested combinations and no warnings, return compatible
-    const status = testedCombinations.length === 0 && warnings.length === 0 
-      ? 'compatible'
-      : (warnings.length > 0 ? 'warning' : 'tested');
 
-    res.json({
-      valid: warnings.length === 0,
+    if (matchingCombo) {
+      status = matchingCombo.verified ? 'tested' : 'compatible';
+      message = matchingCombo.verified 
+        ? 'This service combination has been tested and verified'
+        : 'Service versions appear compatible but untested';
+      verifiedDate = matchingCombo.verified;
+    }
+
+    const responseData = {
+      valid: valid,
       status: status,
       warnings: warnings,
-      message: status === 'compatible' 
-        ? 'Service versions appear compatible but untested'
-        : (status === 'warning'
-          ? 'Service versions may have compatibility issues'
-          : 'Service versions have been tested and verified')
-    });
+      message: message
+    };
+
+    if (verifiedDate) {
+      responseData.verified = verifiedDate;
+    }
+
+    res.json(responseData);
   });
 
   // Get all version info (for debugging)

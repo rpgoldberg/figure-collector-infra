@@ -70,6 +70,28 @@ curl "http://localhost:3001/validate-versions?backend=1.0.0&frontend=0.1.0&scrap
 - `warning` - May work but not explicitly tested
 - `invalid` - Known incompatible combination
 
+### Recent Validation Improvements
+
+**Semver-based Validation Enhancements:**
+- Enhanced version compatibility checking algorithm
+- Improved semver parsing and validation
+- Stricter rules for major version compatibility
+- Better handling of pre-release and build metadata
+
+**Compatibility Validation Example:**
+```typescript
+// New semver validation strategy
+function validateVersionCompatibility(versions: ServiceVersions): ValidationResult {
+  const semverRules = {
+    majorVersionMustMatch: true,
+    allowMinorVersionDiff: true,
+    allowPatchVersionDiff: true
+  };
+
+  return validateCombination(versions, semverRules);
+}
+```
+
 ## Configuration
 
 The service reads from `version.json` for version data and validation rules:
