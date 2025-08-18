@@ -392,22 +392,46 @@ npm run test:coverage
 
 ## Deployment
 
-### Docker
+### Docker Build and Configuration
+
+**Recent Build Improvements:**
+- Added explicit `app.js` to Docker build context
+- Moved `semver` to production dependencies
+- Enhanced Docker build reproducibility
+
 ```bash
+# Build the Docker image
 docker build -t version-service .
 
-# Development
+# Development Container
 docker run -p 3011:3011 -e PORT=3011 version-service
 
-# Production  
+# Production Container 
 docker run -p 3001:3001 -e PORT=3001 version-service
 ```
+
+### Docker Troubleshooting
+
+**Common Issues and Solutions:**
+1. Ensure `version.json` is present in build context
+2. Use `npm ci` for consistent dependency installation
+3. Verify Node.js version compatibility (>=18)
 
 ### Health Check
 The container includes built-in health checks:
 ```bash
+# Development health check
+curl http://localhost:3011/health
+
+# Production health check
 curl http://localhost:3001/health
 ```
+
+**Health Check Reliability:**
+- 30-second interval between checks
+- 3-second timeout
+- 10-second startup grace period
+- 3 retry attempts before marking container unhealthy
 
 ## Integration
 

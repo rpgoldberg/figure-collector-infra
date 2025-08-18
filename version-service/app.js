@@ -121,7 +121,7 @@ const createApp = (versionData) => {
 
 // Load version data
 const loadVersionData = (versionPath = null) => {
-  const actualPath = versionPath || path.join(__dirname, './version.json');
+  const actualPath = versionPath || process.env.VERSION_JSON_PATH || path.join(__dirname, './version.json');
   
   try {
     const data = JSON.parse(fs.readFileSync(actualPath, 'utf8'));
