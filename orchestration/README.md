@@ -73,7 +73,7 @@ cd ../figure-collector-integration-tests && claude-code
 - `test-generator-backend` - Node.js/Express testing
 - `test-generator-frontend` - React testing with accessibility
 - `test-generator-scraper` - Puppeteer mock testing  
-- `test-generator-version-service` - Version management testing
+- `test-generator-version-manager` - Version management testing
 - `documentation-manager` - Documentation synchronization
 - `validation-gates` - Quality assurance and test validation
 

@@ -23,6 +23,8 @@ Four environment files are provided:
 | Backend Port | 5060 | 5055 | 5050 |
 | Frontend Port | 5061 | 5056 | 5051 |
 | Scraper Port | 3010 | 3005 | 3000 |
+| Version Manager Port | 3011 | 3006 | 3001 |
+| Integration Tests Port | 3012 | 3007 | 3002 |
 | Database | separate dev DB | separate test DB | production DB |
 
 ## Quick Deployment
@@ -74,20 +76,41 @@ After deployment, services will be available at:
   - Frontend: http://localhost:5061
   - Backend: http://localhost:5060
   - Scraper: http://localhost:3010
+  - Version Manager: http://localhost:3011
+  - Integration Tests: http://localhost:3012
 
 - **Test:**
   - Frontend: http://localhost:5056
   - Backend: http://localhost:5055
   - Scraper: http://localhost:3005
+  - Version Manager: http://localhost:3006
+  - Integration Tests: http://localhost:3007
 
 - **Production:**
   - Frontend: http://localhost:5051
   - Backend: http://localhost:5050  
   - Scraper: http://localhost:3000
+  - Version Manager: http://localhost:3001
+  - Integration Tests: http://localhost:3002
 
 ## Coolify Integration
 
 The docker-compose.yml includes Coolify labels for automatic deployment. Ensure your Coolify setup uses these environment variables for proper service naming and port configuration.
+
+## SHALLTEAR PROTOCOL Deployment Workflow
+
+### 5-Phase Docker Orchestration
+1. **Initialization**: Version manager coordinates service startup
+2. **Health Check**: Verify individual service health
+3. **Cross-Service Validation**: Check service compatibility
+4. **Dependency Resolution**: Resolve service dependencies
+5. **Integration Testing**: Run comprehensive test suite
+
+### Advanced Startup Configurations
+- Enhanced timeout handling
+- Automatic service retry mechanism
+- Detailed error reporting
+- Predictable service startup sequence
 
 ## Troubleshooting
 
@@ -95,7 +118,22 @@ The docker-compose.yml includes Coolify labels for automatic deployment. Ensure 
 2. **Service communication:** Verify internal service hostnames match your .env configuration
 3. **Database connection:** Ensure MongoDB URI is correct and accessible
 4. **Registry access:** Verify REGISTRY_URL and image tags are correct
+5. **SHALLTEAR Protocol Validation:** Use version-manager to check service compatibility
+
+### SHALLTEAR Protocol Diagnostics
+```bash
+# Run comprehensive service health check
+./scripts/version-manager.sh check-health
+
+# Get detailed service startup report
+./scripts/version-manager.sh startup-report
+```
 
 ## Environment Variable Reference
 
 See `.env.example` for a complete list of all configurable variables with descriptions.
+
+### New Configuration Options
+- `SHALLTEAR_TIMEOUT`: Configure global service startup timeout
+- `INTEGRATION_TESTS_MODE`: Control integration test execution strategy
+- `VERSION_COMPATIBILITY_STRICT`: Enable strict version compatibility checks

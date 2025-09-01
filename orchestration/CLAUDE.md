@@ -168,7 +168,7 @@ NEXT ACTIONS for [USER]:
 - `test-generator-backend` - Jest + Supertest for Node.js/Express services
 - `test-generator-frontend` - React Testing Library + Jest for React apps
 - `test-generator-scraper` - Jest + Puppeteer mocking for scraping services
-- `test-generator-version-service` - Jest + Supertest for version management services
+- `test-generator-version-manager` - Jest + Supertest for version management services
 - `test-generator-integration` - Docker-based integration testing
 - `infrastructure-manager` - Infrastructure automation and deployment
 - `documentation-manager` - Synchronizes documentation with code changes
@@ -184,7 +184,7 @@ NEXT ACTIONS for [USER]:
 │   ├── test-generator-backend.md
 │   ├── test-generator-frontend.md
 │   ├── test-generator-scraper.md
-│   ├── test-generator-version-service.md
+│   ├── test-generator-version-manager.md
 │   └── ... (add more as needed)
 └── commands/
     └── primer.md
@@ -244,7 +244,7 @@ After each sub-agent call:
 - **test-generator-backend**: Jest, API tests, DB setup, mocking
 - **test-generator-frontend**: React tests, UI testing, accessibility  
 - **test-generator-scraper**: Jest + Puppeteer mock test suites for web scraping services
-- **test-generator-version-service**: Jest + Supertest test suites for lightweight Node.js/Express version services
+- **test-generator-version-manager**: Jest + Supertest test suites for lightweight Node.js/Express version services
 - **validation-gates**: Testing and validation specialist, runs tests and ensures quality gates are met
 - **documentation-manager**: README, API docs, technical guides
 

@@ -30,7 +30,7 @@
 **Version Service** (version-manager):
 - `LS /home/rgoldberg/projects/figure-collector-services/version-manager` to explore structure
 - Lightweight version coordination
-- Available agents: test-generator-version-service, documentation-manager, validation-gates
+- Available agents: test-generator-version-manager, documentation-manager, validation-gates
 
 **Integration Testing** (figure-collector-integration-tests):
 - Docker-based cross-service testing

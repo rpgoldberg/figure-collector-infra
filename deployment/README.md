@@ -85,7 +85,7 @@ The page scraper service has special requirements due to browser automation:
 **Deployment Order:**
 1. Deploy version service first (independent)
 2. Deploy scraper service (independent)  
-3. Deploy backend service (depends on version-service and scraper)
+3. Deploy backend service (depends on version-manager and scraper)
 4. Deploy frontend service (registers with backend on startup)
 
 ### Version Service
@@ -171,7 +171,7 @@ Follow the instructions in `deployment/cloudflare/setup-tunnel.sh`.
    - Back up your environment configurations
 
 2. **Monitoring**:
-   - Set up health checks for all services (backend `/health`, scraper `/health`, version-service `/health`)
+   - Set up health checks for all services (backend `/health`, scraper `/health`, version-manager `/health`)
    - Configure alerts for service disruptions
    - Monitor database performance
    - Monitor scraper service memory usage (browser processes)

@@ -4,12 +4,14 @@ A comprehensive, fully-tested microservices application for collecting, managing
 
 ## 🏗️ Architecture
 
-The application consists of four main services:
+The application consists of six main services:
 
 - **Backend API** (`figure-collector-backend`) - Node.js/Express API with MongoDB, acts as orchestrator
 - **Frontend Web App** (`figure-collector-frontend`) - React application with responsive UI and self-registration
 - **Page Scraper** (`page-scraper`) - Dedicated web scraping service with browser automation
 - **Version Manager** (`version-manager`) - Centralized version management and validation service (standalone repository)
+- **Integration Tests** (`figure-collector-integration-tests`) - Comprehensive Docker-based integration testing suite
+- **Infrastructure** (`figure-collector-infra`) - Deployment configuration and cross-service orchestration
 
 ## ✨ Features
 
@@ -282,13 +284,14 @@ This approach ensures stable service-to-service communication and avoids DNS res
 
 ## 📁 Repository Structure
 
-This infrastructure repository contains deployment configuration. The services are in separate repositories:
+This infrastructure repository contains deployment configuration and cross-service orchestration. The services are in separate repositories:
 
 - `figure-collector-backend` - Express.js API server and orchestrator
 - `figure-collector-frontend` - React web application with self-registration
 - `page-scraper` - Web scraping microservice
-- `version-manager` - Version management and validation service (now a separate repository)
-- `figure-collector-infra` - **This repository** - Deployment configuration
+- `version-manager` - Version management and validation service (standalone repository)
+- `figure-collector-integration-tests` - Comprehensive Docker-based integration testing suite
+- `figure-collector-infra` - **This repository** - Deployment configuration and service orchestration
 
 ## 🧪 Testing
 
@@ -302,6 +305,7 @@ The Figure Collector Services includes comprehensive test coverage across all se
 | **Frontend** | 24 test files | Comprehensive UI tests | >85% | React Testing Library + Jest |
 | **Page Scraper** | 7 suites | 163 tests | >95% | Jest + Puppeteer mocks |
 | **Version Service** | 5 suites | 55 tests | 76% | Jest + Supertest |
+| **Integration Tests** | 12 suites | 100+ tests | >85% | Docker + Jest + Integration Test Harness |
 
 ### Test Categories
 
@@ -341,6 +345,7 @@ cd figure-collector-backend && npm run test:memory
 cd figure-collector-frontend && npm test
 cd page-scraper && npm test
 cd version-manager && npm test
+cd figure-collector-integration-tests && npm test
 ```
 
 ### Test Commands by Service
@@ -372,7 +377,7 @@ npm run test:ci             # CI mode (no watch)
 
 **Version Service:**
 ```bash
-cd figure-collector-infra/version-service
+cd figure-collector-infra/version-manager
 
 # Recommended NVM setup (WSL compatibility)
 nvm use 18.16.1
