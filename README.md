@@ -9,7 +9,7 @@ The application consists of four main services:
 - **Backend API** (`figure-collector-backend`) - Node.js/Express API with MongoDB, acts as orchestrator
 - **Frontend Web App** (`figure-collector-frontend`) - React application with responsive UI and self-registration
 - **Page Scraper** (`page-scraper`) - Dedicated web scraping service with browser automation
-- **Version Service** (`version-service`) - Centralized version management and validation service
+- **Version Manager** (`version-manager`) - Centralized version management and validation service (standalone repository)
 
 ## ✨ Features
 
@@ -88,19 +88,19 @@ docker-compose --env-file .env.dev up -d
 - Frontend: http://localhost:5061
 - Backend API: http://localhost:5060
 - Scraper Service: http://localhost:3010
-- Version Service: http://localhost:3011
+- Version Manager: http://localhost:3011
 
 **Test:**
 - Frontend: http://localhost:5056
 - Backend API: http://localhost:5055
 - Scraper Service: http://localhost:3005
-- Version Service: http://localhost:3006
+- Version Manager: http://localhost:3006
 
 **Production:**
 - Frontend: http://localhost:5051
 - Backend API: http://localhost:5050
 - Scraper Service: http://localhost:3000
-- Version Service: http://localhost:3001
+- Version Manager: http://localhost:3001
 
 ## 🔧 Development
 
@@ -117,8 +117,8 @@ docker-compose --env-file .env.dev up -d
    # Scraper
    cd page-scraper && npm install
    
-   # Version Service (if developing locally)
-   cd figure-collector-infra/version-service && npm install
+   # Version Manager (standalone repository)
+   cd version-manager && npm install
    ```
 
 2. **Run services individually:**
@@ -132,8 +132,8 @@ docker-compose --env-file .env.dev up -d
    # Scraper
    cd page-scraper && npm run dev
    
-   # Version Service
-   cd figure-collector-infra/version-service && npm run dev
+   # Version Manager
+   cd version-manager && npm run dev
    ```
 
 3. **Run tests for each service:**
@@ -147,8 +147,8 @@ docker-compose --env-file .env.dev up -d
    # Scraper - Jest with Puppeteer mocking (163 tests)
    cd page-scraper && npm test
    
-   # Version Service - Jest integration tests (55 tests)
-   cd figure-collector-infra/version-service && npm test
+   # Version Manager - Jest integration tests (55 tests)
+   cd version-manager && npm test
    ```
 
 ### Environment Configuration
@@ -160,7 +160,7 @@ The application uses environment variables for flexible deployment:
 | `BACKEND_PORT` | 5060 | 5055 | 5050 | Backend API port |
 | `FRONTEND_PORT` | 5061 | 5056 | 5051 | Frontend port |
 | `SCRAPER_PORT` | 3010 | 3005 | 3000 | Scraper service port |
-| `VERSION_SERVICE_PORT` | 3011 | 3006 | 3001 | Version service port |
+| `VERSION_MANAGER_PORT` | 3011 | 3006 | 3001 | Version management port |
 | `*_SERVICE_NAME` | `*-dev` suffix | `*-test` suffix | No suffix | Service names for networking |
 
 See `.env.example` for complete configuration options.
@@ -231,7 +231,7 @@ const response = await fetch(`${scraperUrl}/scrape/mfc`, {...});
 The application implements a sophisticated version management system:
 
 ### Architecture
-- **Version Service**: Centralized service that stores application version info and validates service combinations
+- **Version Manager**: Centralized service that stores application version info and validates service combinations (now a standalone repository)
 - **Backend Orchestrator**: Aggregates version info from all services and validates combinations
 - **Frontend Self-Registration**: Frontend registers its version with backend on startup (eliminates circular dependencies)
 - **Service Communication**: Backend fetches scraper version directly
@@ -254,7 +254,7 @@ The application implements a sophisticated version management system:
 ### Service Registration Flow
 1. Frontend starts and registers with backend via `/register-service` (proxied by nginx)
 2. Backend fetches scraper version from scraper service
-3. Backend calls version-service to validate the combination
+3. Backend calls version-manager to validate the combination
 4. Frontend displays comprehensive version info with validation status
 
 ### API Architecture
@@ -287,7 +287,7 @@ This infrastructure repository contains deployment configuration. The services a
 - `figure-collector-backend` - Express.js API server and orchestrator
 - `figure-collector-frontend` - React web application with self-registration
 - `page-scraper` - Web scraping microservice
-- `version-service` - Version management and validation service
+- `version-manager` - Version management and validation service (now a separate repository)
 - `figure-collector-infra` - **This repository** - Deployment configuration
 
 ## 🧪 Testing
@@ -340,7 +340,7 @@ The Figure Collector Services includes comprehensive test coverage across all se
 cd figure-collector-backend && npm run test:memory
 cd figure-collector-frontend && npm test
 cd page-scraper && npm test
-cd figure-collector-infra/version-service && npm test
+cd version-manager && npm test
 ```
 
 ### Test Commands by Service
@@ -432,7 +432,7 @@ All services include Jest configurations optimized for continuous integration:
 - `POST /scrape/mfc` - MFC scraping with pre-built config
 - `POST /scrape` - Generic scraping with custom selectors
 
-### Version Service (Direct API)
+### Version Manager (Direct API)
 - `GET /health` - Health check endpoint
 - `GET /app-version` - Get application version and metadata
 - `GET /validate-versions` - Validate service version combinations
@@ -528,7 +528,7 @@ curl http://localhost:3001/health  # Version Service
    cd figure-collector-backend && npm test
    cd figure-collector-frontend && npm test
    cd page-scraper && npm test
-   cd figure-collector-infra/version-service && npm test
+   cd version-manager && npm test
    ```
 6. **Check test coverage** meets minimum requirements (>85%)
 7. Submit a pull request
