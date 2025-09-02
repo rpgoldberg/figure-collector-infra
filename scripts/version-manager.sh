@@ -7,7 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION_FILE="$SCRIPT_DIR/../version.json"
-VERSION_SERVICE_FILE="$SCRIPT_DIR/../version-service/version.json"
+VERSION_SERVICE_FILE="$SCRIPT_DIR/../../version-manager/version.json"
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,7 +28,7 @@ usage() {
     echo "  bump <service> <type>    Bump specific service version"
     echo "  app-release <version>    Create new application release"
     echo "  sync                     Sync environment files with versions"
-    echo "  sync-version             Sync version.json to version-service directory"
+    echo "  sync-version             Sync version.json to version-manager service"
     echo "  check                    Check version compatibility"
     echo ""
     echo "Services: backend, frontend, scraper, infrastructure, app"
@@ -68,7 +68,7 @@ get_date() {
 sync_version_file() {
     if [ -f "$VERSION_FILE" ]; then
         cp "$VERSION_FILE" "$VERSION_SERVICE_FILE"
-        echo -e "${GREEN}✓${NC} Synced version.json to version-service directory"
+        echo -e "${GREEN}✓${NC} Synced version.json to version-manager service"
     else
         echo -e "${RED}✗${NC} Main version.json not found at $VERSION_FILE"
         return 1

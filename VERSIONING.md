@@ -132,9 +132,11 @@ feature/xyz (development)
 
 ### Development
 ```bash
-BACKEND_TAG=latest      # or feature-xyz
-FRONTEND_TAG=latest     # or feature-xyz  
-SCRAPER_TAG=latest      # or feature-xyz
+BACKEND_TAG=latest
+FRONTEND_TAG=latest
+SCRAPER_TAG=latest
+VERSION_MANAGER_TAG=latest
+INTEGRATION_TESTS_TAG=latest
 ```
 
 ### Test/Staging
@@ -142,22 +144,28 @@ SCRAPER_TAG=latest      # or feature-xyz
 BACKEND_TAG=v1.1.0-rc1
 FRONTEND_TAG=v1.1.0-rc1
 SCRAPER_TAG=v1.1.0-rc1
+VERSION_MANAGER_TAG=v1.1.0-rc1
+INTEGRATION_TESTS_TAG=v1.1.0-rc1
 ```
 
 ### Production
 ```bash
-BACKEND_TAG=v1.0.0      # Specific stable versions
-FRONTEND_TAG=v1.0.0
-SCRAPER_TAG=v1.0.0
+BACKEND_TAG=v1.1.0
+FRONTEND_TAG=v1.1.0
+SCRAPER_TAG=v1.1.0
+VERSION_MANAGER_TAG=v1.1.0
+INTEGRATION_TESTS_TAG=v1.1.0
 ```
 
 ## Docker Image Tagging Strategy
 
 ### Image Naming Convention
 ```
-registry/figure-collector-backend:v1.0.0
-registry/figure-collector-frontend:v1.0.0
-registry/page-scraper:v1.0.0
+registry/figure-collector-backend:v1.1.0
+registry/figure-collector-frontend:v1.1.0
+registry/page-scraper:v1.1.0
+registry/version-manager:v1.1.0
+registry/integration-tests:v1.1.0
 ```
 
 ### Multi-Tag Strategy
