@@ -1,0 +1,52 @@
+name: "CodeQL Security Configuration"
+
+# Paths to include in analysis
+paths:
+  - figure-collector-backend
+  - figure-collector-frontend
+  - page-scraper
+  - version-manager
+
+# Paths to exclude from analysis
+paths-ignore:
+  - node_modules
+  - test
+  - tests
+  - "**/*.test.js"
+  - "**/*.test.ts"
+  - "**/*.spec.js"
+  - "**/*.spec.ts"
+  - dist
+  - build
+  - coverage
+
+# Additional queries to run
+queries:
+  - uses: security-and-quality
+  - uses: security-extended
+  - uses: security-experimental
+
+# Language-specific configuration
+languages:
+  javascript:
+    index:
+      include:
+        - "**/*.js"
+        - "**/*.jsx"
+        - "**/*.ts"
+        - "**/*.tsx"
+      exclude:
+        - "**/*.min.js"
+        - "**/vendor/**"
+
+# Query filters
+query-filters:
+  - exclude:
+      problem.severity: recommendation
+  - exclude:
+      tags contain: "experimental"
+      
+# SARIF output configuration
+sarif-output:
+  add-query-help: true
+  include-markdown-help: true

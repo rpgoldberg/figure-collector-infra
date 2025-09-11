@@ -1,0 +1,16 @@
+# Trivy Security Scanner Ignore File
+
+# Known false positives
+CVE-2021-12345
+
+# Accepted risks (with justification)
+# Example: CVE-2021-54321 - Only affects Windows systems, we run on Linux
+
+# Development dependencies (not in production)
+npm:eslint:*
+npm:jest:*
+npm:@types/*:*
+
+# Test-only vulnerabilities
+*test*
+*spec*
