@@ -31,17 +31,17 @@ This document defines the Docker image tagging strategy for the Figure Collector
 
 ```bash
 # Production release
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:v1.2.3
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:1.2
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:1
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:latest
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:v1.2.3
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:1.2
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:1
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:latest
 
 # Development snapshot
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:snapshot
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:develop-abc123f
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:snapshot
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:develop-abc123f
 
 # Release candidate
-docker tag figure-collector-backend:build ghcr.io/yourorg/figure-collector-backend:rc-1.2.3
+docker tag figure-collector-backend:build ghcr.io/rpgoldberg/figure-collector-backend:rc-1.2.3
 ```
 
 ## Lifecycle Management
@@ -72,13 +72,13 @@ Integration tests will use specifically tagged images:
 version: '3.8'
 services:
   backend:
-    image: ghcr.io/yourorg/figure-collector-backend:${BACKEND_TAG:-develop}
+    image: ghcr.io/rpgoldberg/figure-collector-backend:${BACKEND_TAG:-develop}
   frontend:
-    image: ghcr.io/yourorg/figure-collector-frontend:${FRONTEND_TAG:-develop}
+    image: ghcr.io/rpgoldberg/figure-collector-frontend:${FRONTEND_TAG:-develop}
   scraper:
-    image: ghcr.io/yourorg/figure-collector-scraper:${SCRAPER_TAG:-develop}
+    image: ghcr.io/rpgoldberg/figure-collector-scraper:${SCRAPER_TAG:-develop}
   version-manager:
-    image: ghcr.io/yourorg/figure-collector-version:${VERSION_TAG:-develop}
+    image: ghcr.io/rpgoldberg/figure-collector-version:${VERSION_TAG:-develop}
 ```
 
 ## Automated Tagging Script
@@ -88,7 +88,7 @@ services:
 # tag-images.sh
 
 VERSION=$1
-REGISTRY="ghcr.io/yourorg"
+REGISTRY="ghcr.io/rpgoldberg"
 
 if [[ -z "$VERSION" ]]; then
   echo "Usage: ./tag-images.sh <version>"
