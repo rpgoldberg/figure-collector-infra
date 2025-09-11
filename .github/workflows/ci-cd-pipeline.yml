@@ -21,6 +21,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  REGISTRY_ORG: ${{ github.repository_owner }}
   IMAGE_PREFIX: ${{ github.repository_owner }}/figure-collector
   NODE_VERSION: '20'
   DOCKER_BUILDKIT: 1
@@ -249,16 +250,16 @@ jobs:
         include:
           - service: backend
             context: ./figure-collector-backend
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.production
           - service: frontend
             context: ./figure-collector-frontend
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.production
           - service: page-scraper
             context: ./page-scraper
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.production
           - service: version-manager
             context: ./version-manager
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.production
     
     outputs:
       backend-tag: ${{ steps.meta-backend.outputs.tags }}
@@ -309,6 +310,8 @@ jobs:
             VERSION=${{ steps.meta-${{ matrix.service }}.outputs.version }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VCS_REF=${{ github.sha }}
+            GITHUB_ORG=${{ env.REGISTRY_ORG }}
+            GITHUB_REPO=${{ matrix.service }}
       
       - name: Scan Docker image for vulnerabilities
         uses: aquasecurity/trivy-action@master
