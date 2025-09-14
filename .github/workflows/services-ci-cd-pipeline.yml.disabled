@@ -113,42 +113,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      # SonarCloud analysis
+      # SonarCloud analysis (doesn't require Node.js for infra repo)
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      
-      # ESLint with security rules
-      - name: ESLint Security Analysis
-        run: |
-          npm install -g eslint eslint-plugin-security
-          eslint . --ext .js,.jsx,.ts,.tsx --format json --output-file eslint-results.json || true
-      
-      - name: Upload ESLint results
-        uses: actions/upload-artifact@v4
-        with:
-          name: eslint-results
-          path: eslint-results.json
-          retention-days: 30
-      
-      # TypeScript strict mode verification
-      - name: TypeScript Compilation Check
-        run: |
-          for service in backend frontend page-scraper; do
-            echo "Checking $service..."
-            cd figure-collector-$service
-            npm ci
-            npx tsc --noEmit --strict
-            cd ..
-          done
+
+      # Skip ESLint for infra repo (no JavaScript/TypeScript code)
+
+      # Skip TypeScript checks for infra repo (no TypeScript code)
 
   # ============================================
   # STAGE 3: Build & Test All Services
