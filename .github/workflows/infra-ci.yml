@@ -47,8 +47,8 @@ jobs:
       # Validate Docker Compose files
       - name: Validate Docker Compose configurations
         run: |
-          docker-compose -f docker-compose.yml config
-          docker-compose -f docker-compose.test.yml config
+          docker compose -f docker-compose.yml config
+          docker compose -f docker-compose.test.yml config
 
       # Check for secrets in code
       - name: Detect secrets
@@ -79,7 +79,7 @@ jobs:
       # Test Docker build
       - name: Test Docker Compose build
         run: |
-          docker-compose build --no-cache
+          docker compose build --no-cache
 
       # Validate deployment scripts
       - name: Validate deployment scripts
@@ -132,12 +132,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          # Explicitly tell SonarCloud this is not a JS/TS project
-          args: >
-            -Dsonar.sources=.
-            -Dsonar.inclusions=**/*.yml,**/*.yaml,**/*.sh,**/Dockerfile*
-            -Dsonar.exclusions=**/node_modules/**,**/.git/**,**/test-results/**
 
   # ============================================
   # STAGE 4: Documentation Validation

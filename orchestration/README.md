@@ -69,7 +69,7 @@ cd ../figure-collector-integration-tests && claude-code
 - Integration testing oversight
 - Release coordination
 
-### Service-Local Agents (Haiku Model)
+### Service-Local Agents (Sonnet Model)
 - `test-generator-backend` - Node.js/Express testing
 - `test-generator-frontend` - React testing with accessibility
 - `test-generator-scraper` - Puppeteer mock testing  

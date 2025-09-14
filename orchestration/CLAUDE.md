@@ -73,7 +73,7 @@ claude-code  # Local Claude handles version service implementation
 
 ### Atomic Task Principle
 - All sub-agents should be designed for atomic, focused tasks
-- Use **Haiku model** for all sub-agents to optimize cost and performance
+- Use **Sonnet model** for all sub-agents for enhanced capabilities
 - Sub-agents should have single, well-defined responsibilities
 
 ### Test Generation Orchestration Pattern
@@ -83,7 +83,7 @@ When implementing comprehensive test suites:
 1. **Create specialized sub-agents** for each service/component
 2. **Run sub-agents in parallel** using single message with multiple Task tool calls
 3. **Use atomic focus** - one sub-agent per service, not per test type
-4. **Always specify Haiku model** in sub-agent configurations
+4. **Always specify Sonnet model** in sub-agent configurations
 
 ### Sub-Agent Discovery Process
 
@@ -96,7 +96,7 @@ When looking for custom agents:
 ### Model Selection Guidelines
 
 - **Primary Agent (Claude)**: Use Sonnet for orchestration and complex decision-making
-- **Sub-Agents**: Use Haiku for atomic, focused tasks (testing, documentation, validation)
+- **Sub-Agents**: Use Sonnet for atomic, focused tasks (testing, documentation, validation)
 - **Exception**: Use Sonnet only if sub-agent requires complex reasoning or large context
 
 ### Proactive Agent Usage
@@ -205,7 +205,7 @@ When encountering complex tasks requiring multiple atomic operations:
 ```markdown
 1. Use TodoWrite to plan atomic tasks
 2. Call sub-agents directly with Task tool
-3. Force Haiku with MODEL_OVERRIDE on every call
+3. Force Sonnet with MODEL_OVERRIDE on every call
 4. Verify each completion before proceeding
 5. Update TodoWrite with progress
 ```
@@ -217,8 +217,8 @@ Task:
 subagent_type: test-generator-backend
 description: [Brief atomic task]
 prompt:
-MODEL_OVERRIDE: claude-3-haiku-20240307
-AGENT_MODEL: haiku
+MODEL_OVERRIDE: sonnet
+AGENT_MODEL: sonnet
 
 ATOMIC TASK: [Specific focused task]
 
@@ -233,7 +233,7 @@ Start with: I am using [MODEL_NAME] to [specific task].
 #### 4. **Verification Checklist**
 
 After each sub-agent call:
-- ✅ Confirmed Haiku model usage
+- ✅ Confirmed Sonnet model usage
 - ✅ Task stayed atomic/focused  
 - ✅ Files actually modified/created
 - ✅ Changes work as expected
@@ -305,8 +305,8 @@ Figure.aggregate([{
 When orchestration works correctly:
 1. **Plan** tasks atomically with TodoWrite
 2. **Delegate** with proper MODEL_OVERRIDE forcing
-3. **Verify** Haiku usage and file changes
+3. **Verify** Sonnet usage and file changes
 4. **Progress** systematically through atomic tasks
 5. **Document** results and any remaining issues
 
-This approach delivers the intended atomic Haiku sub-agent architecture without relying on the broken test-orchestrator.
+This approach delivers the intended atomic Sonnet sub-agent architecture without relying on the broken test-orchestrator.
