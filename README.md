@@ -546,6 +546,27 @@ curl http://localhost:3001/health  # Version Service
 - **Version Service**: Add integration tests for new validation logic
 - **Accessibility**: Include accessibility tests for user-facing features
 
+## 🔒 Recent Security Improvements
+
+### Docker Security Enhancements
+- **Explicit File Copying**: Replaced recursive COPY with specific file patterns in Dockerfiles
+- **Reduced Attack Surface**: Only necessary files included in production images
+- **Non-root User**: Services run with minimal privileges where applicable
+- **npm Security**: Using `--ignore-scripts` flag to prevent malicious package scripts
+- **Layer Optimization**: Merged RUN instructions to reduce image layers
+
+### API Security
+- **Protected Test Endpoints**: Admin endpoints require authentication tokens
+- **Environment-based Access**: Sensitive endpoints only available in non-production
+- **Error Message Sanitization**: Removed internal error details from API responses
+- **Async Resource Cleanup**: Proper cleanup of browser resources to prevent memory leaks
+
+### Test Coverage & Quality
+- **80%+ Code Coverage**: All services meet SonarCloud quality gates
+- **Security Testing**: Added tests for authentication and authorization
+- **CI/CD Integration**: Automated security scanning with SonarCloud
+- **Workflow Security**: Fixed deprecated GitHub Actions and free tier limitations
+
 ## 📄 License
 
 This project is licensed under the MIT License.

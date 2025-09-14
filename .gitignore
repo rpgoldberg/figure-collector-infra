@@ -27,3 +27,4 @@ version-service/coverage/
 # Exclude only personal Claude preferences
 .claude/personal/
 .claude/user-*/
+test-results/

@@ -1,0 +1,44 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [main, develop]  # Only analyze default branches (free tier limitation)
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    # Continue even if SonarCloud fails (project might not be set up yet)
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones disabled for better analysis
+
+      # No Node.js setup needed - this is infrastructure code only
+
+      - name: Check for SonarCloud Setup
+        id: check_sonar
+        run: |
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "::warning::SONAR_TOKEN not configured - skipping analysis"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: SonarCloud Scan
+        if: steps.check_sonar.outputs.skip != 'true'
+        uses: SonarSource/sonarqube-scan-action@v3.1.0
+        continue-on-error: true
+        with:
+          args: >
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.organization=rpgoldberg
+            -Dsonar.projectKey=rpgoldberg_figure-collector-infra
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

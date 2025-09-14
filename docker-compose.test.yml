@@ -6,7 +6,7 @@ version: '3.8'
 services:
   backend-test:
     build:
-      context: ./figure-collector-backend
+      context: ../figure-collector-backend
       dockerfile: Dockerfile.test
     environment:
       - NODE_ENV=test
@@ -18,7 +18,7 @@ services:
     
   frontend-test:
     build:
-      context: ./figure-collector-frontend
+      context: ../figure-collector-frontend
       dockerfile: Dockerfile.test
     environment:
       - CI=true
@@ -29,7 +29,7 @@ services:
     
   scraper-test:
     build:
-      context: ./page-scraper
+      context: ../page-scraper
       dockerfile: Dockerfile.test
     environment:
       - NODE_ENV=test
@@ -39,7 +39,7 @@ services:
     
   version-manager-test:
     build:
-      context: ./version-manager
+      context: ../version-manager
       dockerfile: Dockerfile.test
     environment:
       - NODE_ENV=test

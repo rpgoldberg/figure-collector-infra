@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # Option 1: Lightweight Registry (Recommended for cost-efficiency)
+  registry:
+    image: registry:2
+    container_name: docker-registry
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      REGISTRY_STORAGE_MAINTENANCE:
+        uploadpurging:
+          enabled: true
+          age: 168h  # 7 days
+          interval: 24h
+          dryrun: false
+    volumes:
+      - registry-data:/var/lib/registry
+      - ./auth:/auth
+    networks:
+      - registry-network
+
+  # Registry UI for management
+  registry-ui:
+    image: joxit/docker-registry-ui:2
+    container_name: registry-ui
+    restart: always
+    ports:
+      - "5001:80"
+    environment:
+      REGISTRY_TITLE: "Figure Collector Docker Registry"
+      REGISTRY_URL: http://registry:5000
+      DELETE_IMAGES: "true"
+      SHOW_CONTENT_DIGEST: "true"
+      SHOW_CATALOG_NB_TAGS: "true"
+      CATALOG_MIN_BRANCHES: 1
+      CATALOG_MAX_BRANCHES: 10
+      TAGLIST_PAGE_SIZE: 100
+      REGISTRY_SECURED: "true"
+      SINGLE_REGISTRY: "true"
+    depends_on:
+      - registry
+    networks:
+      - registry-network
+
+  # Option 2: Harbor (Full-featured enterprise registry)
+  # Uncomment below for Harbor instead of basic registry
+  
+  # harbor-db:
+  #   image: goharbor/harbor-db:v2.9.0
+  #   container_name: harbor-db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: ${HARBOR_DB_PASSWORD}
+  #   volumes:
+  #     - harbor-db:/var/lib/postgresql/data
+  #   networks:
+  #     - harbor-network
+  
+  # harbor-redis:
+  #   image: goharbor/redis-photon:v2.9.0
+  #   container_name: harbor-redis
+  #   restart: always
+  #   volumes:
+  #     - harbor-redis:/var/lib/redis
+  #   networks:
+  #     - harbor-network
+  
+  # harbor-core:
+  #   image: goharbor/harbor-core:v2.9.0
+  #   container_name: harbor-core
+  #   restart: always
+  #   environment:
+  #     CONFIG_PATH: /etc/core/app.conf
+  #     HARBOR_ADMIN_PASSWORD: ${HARBOR_ADMIN_PASSWORD}
+  #   volumes:
+  #     - harbor-data:/data
+  #     - ./harbor-config:/etc/core
+  #   depends_on:
+  #     - harbor-db
+  #     - harbor-redis
+  #   networks:
+  #     - harbor-network
+  
+  # harbor-portal:
+  #   image: goharbor/harbor-portal:v2.9.0
+  #   container_name: harbor-portal
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - harbor-core
+  #   networks:
+  #     - harbor-network
+
+volumes:
+  registry-data:
+    driver: local
+  # Harbor volumes (uncomment if using Harbor)
+  # harbor-db:
+  #   driver: local
+  # harbor-redis:
+  #   driver: local
+  # harbor-data:
+  #   driver: local
+
+networks:
+  registry-network:
+    driver: bridge
+  # harbor-network:
+  #   driver: bridge
