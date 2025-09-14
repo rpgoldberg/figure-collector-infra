@@ -160,7 +160,7 @@ jobs:
     steps:
       - name: Check CI Status
         run: |
-          if [ "${{ contains(needs.*.result, 'failure') }}" == "true" ]; then
+          if ${{ contains(needs.*.result, 'failure') }}; then
             echo "CI pipeline failed"
             exit 1
           fi
