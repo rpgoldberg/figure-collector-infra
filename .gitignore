@@ -28,3 +28,8 @@ version-service/coverage/
 .claude/personal/
 .claude/user-*/
 test-results/
+
+# Claude-specific files
+.claude/
+CLAUDE.md
+*claude-backup*
