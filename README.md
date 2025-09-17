@@ -62,7 +62,7 @@ The application consists of six main services:
 2. **Required environment variables:**
    - `MONGODB_URI` - Your MongoDB connection string
    - `JWT_SECRET` - Secure secret for JWT tokens
-   - Update ports if needed (dev: 5060/5061, prod: 5000/80)
+   - Update ports if needed (dev: 5070/5071, prod: 5000/80)
 
 ### Deployment
 
@@ -87,8 +87,8 @@ docker-compose --env-file .env.dev up -d
 ### Access Points
 
 **Development:**
-- Frontend: http://localhost:5061
-- Backend API: http://localhost:5060
+- Frontend: http://localhost:5071
+- Backend API: http://localhost:5070
 - Scraper Service: http://localhost:3010
 - Version Manager: http://localhost:3011
 
@@ -159,8 +159,8 @@ The application uses environment variables for flexible deployment:
 
 | Variable | Development | Test | Production | Description |
 |----------|-------------|------|------------|-------------|
-| `BACKEND_PORT` | 5060 | 5055 | 5050 | Backend API port |
-| `FRONTEND_PORT` | 5061 | 5056 | 5051 | Frontend port |
+| `BACKEND_PORT` | 5070 | 5055 | 5050 | Backend API port |
+| `FRONTEND_PORT` | 5071 | 5056 | 5051 | Frontend port |
 | `SCRAPER_PORT` | 3010 | 3005 | 3000 | Scraper service port |
 | `VERSION_MANAGER_PORT` | 3011 | 3006 | 3001 | Version management port |
 | `*_SERVICE_NAME` | `*-dev` suffix | `*-test` suffix | No suffix | Service names for networking |
@@ -503,7 +503,7 @@ docker-compose logs -f [service-name]
 Verify service health:
 ```bash
 # Development environment
-curl http://localhost:5060/health  # Backend
+curl http://localhost:5070/health  # Backend
 curl http://localhost:3010/health  # Scraper
 curl http://localhost:3011/health  # Version Service
 

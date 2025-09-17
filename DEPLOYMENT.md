@@ -20,8 +20,8 @@ Four environment files are provided:
 | Setting | Development | Test | Production |
 |---------|-------------|------|------------|
 | Service Names | `-dev` suffix | `-test` suffix | No suffix |
-| Backend Port | 5060 | 5055 | 5050 |
-| Frontend Port | 5061 | 5056 | 5051 |
+| Backend Port | 5070 | 5055 | 5050 |
+| Frontend Port | 5071 | 5056 | 5051 |
 | Scraper Port | 3010 | 3005 | 3000 |
 | Version Manager Port | 3011 | 3006 | 3001 |
 | Integration Tests Port | 3012 | 3007 | 3002 |
@@ -73,8 +73,8 @@ Before deploying, you MUST update these values in your environment file:
 After deployment, services will be available at:
 
 - **Development:**
-  - Frontend: http://localhost:5061
-  - Backend: http://localhost:5060
+  - Frontend: http://localhost:5071
+  - Backend: http://localhost:5070
   - Scraper: http://localhost:3010
   - Version Manager: http://localhost:3011
   - Integration Tests: http://localhost:3012
