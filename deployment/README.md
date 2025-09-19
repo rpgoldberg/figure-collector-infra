@@ -129,7 +129,7 @@ The application implements a sophisticated version management system that elimin
 - **Business APIs**: `/api/*` prefix stripped by nginx → backend endpoints without prefix
 - **Infrastructure APIs**: Direct proxy (no prefix stripping)
   - `/version` → backend `/version`
-  - `/register-service` → backend `/register-service`
+  - `/register-frontend` → backend `/register-frontend`
 
 **Nginx Configuration:**
 - Uses `upstream backend` block for reliable service-to-service communication
@@ -195,7 +195,7 @@ Follow the instructions in `deployment/cloudflare/setup-tunnel.sh`.
    - If `/api/*` routes return 404 or "Cannot POST /", check nginx upstream configuration
    - Ensure `BACKEND_HOST` and `BACKEND_PORT` environment variables are correct in frontend service
    - Variable-based proxy configurations may fail in some container environments; use `upstream` blocks instead
-6. **Frontend Version Shows "unknown"**: Check that frontend self-registration is working via `/register-service` endpoint
+6. **Frontend Version Shows "unknown"**: Check that frontend self-registration is working via `/register-frontend` endpoint
 
 ### Debug Steps
 
@@ -207,9 +207,9 @@ Follow the instructions in `deployment/cloudflare/setup-tunnel.sh`.
 
 2. **Test Backend Connectivity**:
    ```bash
-   curl -X POST https://your-domain.com/register-service \
+   curl -X POST https://your-domain.com/register-frontend \
      -H "Content-Type: application/json" \
-     -d '{"serviceName":"test","version":"1.0.0"}'
+     -d '{"version":"1.0.0","name":"test-frontend"}'
    ```
 
 3. **Verify Environment Variables**: Check that all required environment variables are set correctly in Coolify

@@ -250,11 +250,11 @@ The application implements a sophisticated version management system:
 - `GET /validate-versions?backend=X&frontend=Y&scraper=Z` - Validate service combination
 
 **Backend:**
-- `POST /register-service` - Service registration endpoint (used by frontend)
+- `POST /register-frontend` - Frontend registration proxy endpoint (no auth required)
 - `GET /version` - Aggregated version info with validation results
 
 ### Service Registration Flow
-1. Frontend starts and registers with backend via `/register-service` (proxied by nginx)
+1. Frontend starts and registers with backend via `/register-frontend` (proxied by nginx)
 2. Backend fetches scraper version from scraper service
 3. Backend calls version-manager to validate the combination
 4. Frontend displays comprehensive version info with validation status
@@ -269,7 +269,7 @@ The application uses a hybrid routing approach with nginx upstream configuration
 
 **Infrastructure APIs** (direct proxy)
 - Frontend: `/version` → Backend: `/version`
-- Frontend: `/register-service` → Backend: `/register-service`
+- Frontend: `/register-frontend` → Backend: `/register-frontend`
 - No prefix stripping, direct 1:1 mapping via `upstream backend` block
 
 ### Nginx Proxy Configuration
@@ -424,7 +424,7 @@ All services include Jest configurations optimized for continuous integration:
 - `DELETE /api/figures/:id` - Delete figure
 
 ### Version Management (Infrastructure APIs)
-- `POST /register-service` - Service registration (used by frontend)
+- `POST /register-frontend` - Frontend registration proxy (no auth required)
 - `GET /version` - Get aggregated version info with validation
 
 ### Scraping (Backend Proxy)

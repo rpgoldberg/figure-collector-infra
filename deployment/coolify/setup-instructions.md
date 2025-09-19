@@ -72,6 +72,7 @@ Create your environment configuration:
 5. Configure environment variables from your .env file:
    - `NODE_ENV`: ${ENVIRONMENT}
    - `PORT`: ${VERSION_SERVICE_PORT}
+   - `SERVICE_AUTH_TOKEN`: ${SERVICE_AUTH_TOKEN}
 6. Set service name to match `VERSION_SERVICE_NAME` from your .env
 7. Click "Save" and "Deploy"
 
@@ -83,6 +84,8 @@ Create your environment configuration:
 4. Configure environment variables from your .env file:
    - `NODE_ENV`: ${ENVIRONMENT}
    - `PORT`: ${SCRAPER_PORT}
+   - `VERSION_MANAGER_URL`: ${VERSION_MANAGER_URL}
+   - `SERVICE_AUTH_TOKEN`: ${SERVICE_AUTH_TOKEN}
 5. Set service name to match `SCRAPER_SERVICE_NAME` from your .env
 6. Click "Save" and "Deploy"
 
@@ -96,6 +99,8 @@ Create your environment configuration:
    - `PORT`: ${BACKEND_PORT}
    - `MONGODB_URI`: ${MONGODB_URI}
    - `JWT_SECRET`: ${JWT_SECRET}
+   - `JWT_REFRESH_SECRET`: ${JWT_REFRESH_SECRET}
+   - `SERVICE_AUTH_TOKEN`: ${SERVICE_AUTH_TOKEN}
    - `SCRAPER_SERVICE_URL`: ${SCRAPER_SERVICE_URL}
    - `VERSION_SERVICE_URL`: ${VERSION_SERVICE_URL}
 5. Set service name to match `BACKEND_SERVICE_NAME` from your .env
