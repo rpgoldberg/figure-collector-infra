@@ -65,16 +65,25 @@ ghcr.io/rpgoldberg/[service]:[branch]-[sha]
    - npm audit during build
    - Trivy filesystem scan
    - License compliance check
+   - Use `npm ci --omit=dev --ignore-scripts` for secure installs
 
 2. **Container Scanning**
-   - Base image vulnerability scan
+   - Base image vulnerability scan (Node 22 LTS recommended)
    - Layer-by-layer analysis
    - Secret detection
+   - Grype scan with `--fail-on high` threshold
+   - Multi-stage builds to minimize attack surface
 
 3. **SBOM Generation**
    - SPDX format for compliance
    - CycloneDX for tool compatibility
    - Attestation attached to images
+   - Generated for every PR and push
+
+4. **Known Security Considerations**
+   - Alpine curl package may have CVEs - consider removing if not essential
+   - npm in Node base images may have outdated cross-spawn - use Node 22+
+   - Use multi-stage builds to exclude development dependencies
 
 ### Runtime Security
 1. **Continuous Monitoring**
