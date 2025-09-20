@@ -9,7 +9,9 @@ This document provides the exact command sequences for managing git flow and ver
 - `figure-collector-backend/` - Backend service repository
 - `figure-collector-frontend/` - Frontend service repository  
 - `page-scraper/` - Standalone scraping service repository
-- `figure-collector-infra/` - Infrastructure and deployment repository
+- `version-manager/` - Version management service repository
+- `figure-collector-integration-tests/` - Docker-based integration testing suite
+- `figure-collector-infra/` - Infrastructure and cross-service orchestration repository
 
 ## Core Principles
 
@@ -214,6 +216,8 @@ feature/xyz (development)
 BACKEND_TAG=latest      # or v1.1.0-dev
 FRONTEND_TAG=latest     # or v1.0.1-dev
 SCRAPER_TAG=latest      # or v1.0.0-dev
+VERSION_MANAGER_TAG=latest  # or v1.1.0-dev
+INTEGRATION_TESTS_TAG=latest  # or v1.1.0-dev
 ```
 
 ### Test/Staging Environment
@@ -222,6 +226,8 @@ SCRAPER_TAG=latest      # or v1.0.0-dev
 BACKEND_TAG=v1.1.0
 FRONTEND_TAG=v1.0.1
 SCRAPER_TAG=v1.0.0
+VERSION_MANAGER_TAG=v1.1.0
+INTEGRATION_TESTS_TAG=v1.1.0
 ```
 
 ### Production Environment
@@ -230,6 +236,8 @@ SCRAPER_TAG=v1.0.0
 BACKEND_TAG=v1.1.0
 FRONTEND_TAG=v1.0.1
 SCRAPER_TAG=v1.0.0
+VERSION_MANAGER_TAG=v1.1.0
+INTEGRATION_TESTS_TAG=v1.1.0
 ```
 
 ## Independent Service Versioning
@@ -245,10 +253,35 @@ git tag v1.2.0  # Independent of other services
 git push origin develop --tags
 ```
 
+### Comprehensive Service Ecosystem
+```bash
+# Each service manages its own versioning
+# Integration tests coordinate service compatibility
+# Version manager validates service version combinations
+```
+
+### New Integration Test Service
+```bash
+# Comprehensive Docker-based integration testing
+cd figure-collector-integration-tests
+git checkout develop
+# ... update test suites ...
+./scripts/version-manager.sh bump integration-tests minor
+git tag v1.1.0
+git push origin develop --tags
+```
+
+### SHALLTEAR PROTOCOL
+- 5-phase Docker startup
+- Cross-service health checks
+- Optimized timeout configurations
+- Enhanced test infrastructure
+
 ### figure-collector services (Coupled)
 ```bash
 # Backend and frontend are often coordinated
 # But can still version independently when changes don't affect each other
+# Integration tests validate service compatibility
 ```
 
 ## Rollback Strategy

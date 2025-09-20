@@ -16,3 +16,20 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Test coverage reports
+version-service/coverage/
+
+# Include Claude Code configurations for team collaboration
+# These provide valuable development infrastructure and agent definitions
+# !.claude/
+# !CLAUDE.md
+# Exclude only personal Claude preferences
+.claude/personal/
+.claude/user-*/
+test-results/
+
+# Claude-specific files
+.claude/
+CLAUDE.md
+*claude-backup*

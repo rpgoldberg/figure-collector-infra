@@ -7,7 +7,7 @@ This guide explains how to deploy the Figure Collector application using Coolify
 - A server running Ubuntu 24.04 LTS
 - Docker and Docker Compose installed
 - Domain name (for Cloudflare Tunnel)
-- Git repositories for backend, frontend, page-scraper, and version-service components
+- Git repositories for backend, frontend, page-scraper, and version-manager components
 
 ## 1. Install Coolify
 
@@ -43,7 +43,7 @@ Set server hostname and configure for local discovery:
    - figure-collector-backend
    - figure-collector-frontend
    - page-scraper
-   - figure-collector-infra (for version-service)
+   - figure-collector-infra (for version-manager)
 
 ## 5. Create Coolify Project
 
@@ -68,10 +68,11 @@ Create your environment configuration:
 1. Within your project, click "New Service"
 2. Select "Application" > "Docker Compose"  
 3. Choose your figure-collector-infra repository
-4. Set build context to `version-service/`
+4. Set build context to `version-manager/`
 5. Configure environment variables from your .env file:
    - `NODE_ENV`: ${ENVIRONMENT}
    - `PORT`: ${VERSION_SERVICE_PORT}
+   - `SERVICE_AUTH_TOKEN`: ${SERVICE_AUTH_TOKEN}
 6. Set service name to match `VERSION_SERVICE_NAME` from your .env
 7. Click "Save" and "Deploy"
 
@@ -83,6 +84,8 @@ Create your environment configuration:
 4. Configure environment variables from your .env file:
    - `NODE_ENV`: ${ENVIRONMENT}
    - `PORT`: ${SCRAPER_PORT}
+   - `VERSION_MANAGER_URL`: ${VERSION_MANAGER_URL}
+   - `SERVICE_AUTH_TOKEN`: ${SERVICE_AUTH_TOKEN}
 5. Set service name to match `SCRAPER_SERVICE_NAME` from your .env
 6. Click "Save" and "Deploy"
 
@@ -96,6 +99,8 @@ Create your environment configuration:
    - `PORT`: ${BACKEND_PORT}
    - `MONGODB_URI`: ${MONGODB_URI}
    - `JWT_SECRET`: ${JWT_SECRET}
+   - `JWT_REFRESH_SECRET`: ${JWT_REFRESH_SECRET}
+   - `SERVICE_AUTH_TOKEN`: ${SERVICE_AUTH_TOKEN}
    - `SCRAPER_SERVICE_URL`: ${SCRAPER_SERVICE_URL}
    - `VERSION_SERVICE_URL`: ${VERSION_SERVICE_URL}
 5. Set service name to match `BACKEND_SERVICE_NAME` from your .env
