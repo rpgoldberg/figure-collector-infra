@@ -47,6 +47,9 @@ services:
       - BACKEND_HOST=${BACKEND_HOST}
       - BACKEND_PORT=${BACKEND_PORT}
       - FRONTEND_PORT=${FRONTEND_PORT}
+      - WDS_SOCKET_PORT=0
+      - WATCHPACK_POLLING=true
+      - FAST_REFRESH=false
     ports:
       - "${FRONTEND_PORT:-5071}:${FRONTEND_PORT:-5071}"
     volumes:
