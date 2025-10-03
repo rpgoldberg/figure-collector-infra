@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # Backend API service (development)
+  backend:
+    build:
+      context: ../figure-collector-backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: ${BACKEND_SERVICE_NAME:-backend}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${ENVIRONMENT:-development}
+      - PORT=${BACKEND_PORT:-5070}
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - SCRAPER_SERVICE_URL=${SCRAPER_SERVICE_URL}
+      - VERSION_MANAGER_URL=${VERSION_MANAGER_URL}
+      - SERVICE_AUTH_TOKEN=${SERVICE_AUTH_TOKEN}
+    ports:
+      - "${BACKEND_PORT:-5070}:${BACKEND_PORT:-5070}"
+    volumes:
+      - ../figure-collector-backend/src:/app/src
+      - ../figure-collector-backend/package.json:/app/package.json
+    networks:
+      - figure-network
+    depends_on:
+      - mongodb
+      - scraper
+      - version-manager
+
+  # Frontend application (development)
+  frontend:
+    build:
+      context: ../figure-collector-frontend
+      dockerfile: Dockerfile
+      target: development
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL}
+    container_name: ${FRONTEND_SERVICE_NAME:-frontend}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${ENVIRONMENT:-development}
+      - PORT=${FRONTEND_PORT:-5071}
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+      - BACKEND_HOST=${BACKEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+    ports:
+      - "${FRONTEND_PORT:-5071}:${FRONTEND_PORT:-5071}"
+    volumes:
+      - ../figure-collector-frontend/src:/app/src
+      - ../figure-collector-frontend/public:/app/public
+      - ../figure-collector-frontend/package.json:/app/package.json
+    networks:
+      - figure-network
+    depends_on:
+      - backend
+
+  # Page scraper service (development)
+  scraper:
+    build:
+      context: ../page-scraper
+      dockerfile: Dockerfile
+      target: development
+    container_name: ${SCRAPER_SERVICE_NAME:-scraper}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${ENVIRONMENT:-development}
+      - PORT=${SCRAPER_PORT:-3010}
+      - VERSION_MANAGER_URL=${VERSION_MANAGER_URL}
+      - SERVICE_AUTH_TOKEN=${SERVICE_AUTH_TOKEN}
+    ports:
+      - "${SCRAPER_PORT:-3010}:${SCRAPER_PORT:-3010}"
+    volumes:
+      - ../page-scraper/src:/app/src
+      - ../page-scraper/package.json:/app/package.json
+    networks:
+      - figure-network
+    shm_size: '2gb'  # Puppeteer needs shared memory
+    depends_on:
+      - version-manager
+
+  # Version manager service (development)
+  version-manager:
+    build:
+      context: ../version-manager
+      dockerfile: Dockerfile
+      target: development
+    container_name: ${VERSION_SERVICE_NAME:-version-manager}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${ENVIRONMENT:-development}
+      - PORT=${VERSION_SERVICE_PORT:-3011}
+      - SERVICE_AUTH_TOKEN=${SERVICE_AUTH_TOKEN}
+    ports:
+      - "${VERSION_SERVICE_PORT:-3011}:${VERSION_SERVICE_PORT:-3011}"
+    volumes:
+      - ../version-manager:/app
+    networks:
+      - figure-network
+
+  # MongoDB for local development
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=figure-collector-dev
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - figure-network
+
+networks:
+  figure-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
