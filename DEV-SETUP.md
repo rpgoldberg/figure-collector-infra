@@ -150,6 +150,51 @@ docker-compose -f docker-compose.dev.yml logs -f
 docker-compose -f docker-compose.dev.yml logs -f backend
 ```
 
+### Frontend API 404 errors
+If the frontend shows 404 errors for API requests like `/api/figures/*`:
+
+**Cause**: Missing or misconfigured proxy middleware
+
+**Solution**: The frontend uses `src/setupProxy.js` to proxy API requests:
+- Requires `http-proxy-middleware` package (should be installed)
+- Rewrites `/api/*` → `/*` when forwarding to backend
+- If missing, API requests will hit the frontend server (port 5071) instead of backend (port 5070)
+
+**Verify proxy is working**:
+```bash
+docker logs figure-collector-frontend-dev | grep HPM
+# Should show: [HPM] Proxy created and [HPM] Proxy rewrite rule created
+```
+
+### Docker cache/build errors (KeyError: 'ContainerConfig')
+If you get `KeyError: 'ContainerConfig'` or similar Docker metadata errors:
+
+**Cause**: Docker Compose cached metadata conflicts with configuration changes
+
+**Solution**: Clean up containers and images:
+```bash
+# Stop and remove all containers
+docker-compose -f docker-compose.dev.yml down --remove-orphans
+
+# Remove specific service containers and images
+docker rm -f figure-collector-frontend-dev
+docker rmi $(docker images -q 'figure-collector-infra*frontend*')
+
+# Rebuild fresh
+docker-compose -f docker-compose.dev.yml up --build -d
+```
+
+**Note**: This is a Docker Compose bug that occurs when configuration changes between builds. The manual cleanup above is the recommended fix.
+
+### webpack-dev-server compatibility
+The frontend uses react-scripts 5.0.1 which requires webpack-dev-server 4.x.
+
+**Important**: Do NOT add `webpack-dev-server` to package.json overrides - this causes compatibility issues.
+
+If you see errors like `unknown property 'onAfterSetupMiddleware'`:
+- Check that package.json does NOT have webpack-dev-server in overrides section
+- Let react-scripts use its bundled compatible version
+
 ## Environment Variables
 
 The `.env.dev` file includes all necessary variables:
