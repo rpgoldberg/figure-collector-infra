@@ -87,7 +87,7 @@ services:
     build:
       context: ../version-manager
       dockerfile: Dockerfile
-      target: development
+      # No target specified - uses default (production stage)
     container_name: ${VERSION_SERVICE_NAME:-version-manager}
     restart: unless-stopped
     environment:
