@@ -15,10 +15,10 @@ This document provides the exact command sequences for managing git flow and ver
 
 ## Core Principles
 
-1. **Never bump versions on feature branches** - only on develop
-2. **Always tag on develop** after version bump and merge
-3. **Main branch** gets merges from develop when ready for production
-4. **Version bumping happens AFTER** the PR is merged into develop
+1. **Develop branch is protected** - all changes require PRs (including version bumps)
+2. **Version bumps via PR** - create feature branch → bump version → PR to develop
+3. **Tag AFTER merge and build verification** - never tag before Docker builds confirm success
+4. **Main branch** gets merges from develop via release branches for production
 5. **Each service versions independently**
 6. **Application releases coordinate service versions**
 
@@ -44,43 +44,69 @@ git push origin feature/add-endpoint
 # Create PR: feature/add-endpoint → develop (via GitHub/GitLab UI)
 # Review, approve, merge
 
-# === PHASE 3: Version Bumping (ON DEVELOP) ===
+# === PHASE 3: Version Bumping (VIA PR TO DEVELOP) ===
 git checkout develop
-git pull origin develop  # Gets the merged changes
+git pull origin develop  # Gets the merged feature changes
 
-# NOW bump the version on develop branch
+# Create feature branch for version bump
+git checkout -b feature/bump-v1.1.0
+
+# Bump the version using script
 ./scripts/version-manager.sh bump backend minor  # 1.0.0 → 1.1.0
 
-# Commit the version bump
+# Commit and push the version bump
 git add .
 git commit -m "Bump backend version to v1.1.0"
+git push -u origin feature/bump-v1.1.0
 
-# Tag the version on develop
+# Create PR: feature/bump-v1.1.0 → develop
+gh pr create --base develop --title "Bump to v1.1.0" --body "Version bump for v1.1.0"
+
+# After PR merged AND Docker builds verified:
+git checkout develop
+git pull origin develop
 git tag v1.1.0
-git push origin develop --tags
+git push origin --tags
 
-# === PHASE 4: Application Release (INFRA REPO) ===
+# === PHASE 4: Application Release (INFRA REPO VIA PR) ===
 cd ../figure-collector-infra
 git checkout develop
 git pull origin develop
+
+# Create feature branch for application release
+git checkout -b feature/bump-v1.2.0
 
 # Create application release with current service versions
 ./scripts/version-manager.sh app-release 1.2.0  # App v1.2.0 with backend v1.1.0
 
 git add .
 git commit -m "Application release v1.2.0"
-git tag v1.2.0  
-git push origin develop --tags
+git push -u origin feature/bump-v1.2.0
 
-# === PHASE 5: Production Deployment (MAIN BRANCH) ===
-# When ready for production:
-git checkout main
-git pull origin main
-git merge develop  # Fast-forward merge
-git push origin main
+# Create PR: feature/bump-v1.2.0 → develop
+gh pr create --base develop --title "Bump to v1.2.0" --body "Application release v1.2.0"
 
-# Deploy to production
-./deploy.sh prod  # Uses the tagged versions from .env.prod
+# After PR merged AND Docker builds verified:
+git checkout develop
+git pull origin develop
+git tag v1.2.0
+git push origin --tags
+
+# === PHASE 5: Production Release (RELEASE BRANCHES) ===
+# Create release branch from develop (after tags applied)
+git checkout develop
+git pull origin develop
+git checkout -b release/1.2.0
+
+# Push release branch
+git push -u origin release/1.2.0
+
+# Create PR: release/1.2.0 → main (fast-forward merge)
+gh pr create --base main --title "Release v1.2.0" --body "Production release v1.2.0"
+
+# After PR merged to main:
+# - GitHub Actions builds production Docker images with version tags
+# - Create GitHub release with SBOM, release notes, migration guides
 ```
 
 ## Multi-Version Development Support
@@ -176,21 +202,22 @@ cd figure-collector-infra
 
 ## Production Release Strategies
 
-### Option A: Regular Release Cycles
+### Release Branch Workflow (Required for Protected Branches)
 ```bash
-# Weekly/monthly: merge develop → main
-git checkout main
-git merge develop
-./deploy.sh prod
-```
+# Create release branch from develop (after version tags applied)
+git checkout develop
+git pull origin develop
+git checkout -b release/1.2.0
 
-### Option B: Feature-Based Releases  
-```bash
-# After each major feature is tested:
-git checkout main  
-git merge develop
-git tag production-v1.2.0  # Optional production-specific tag
-./deploy.sh prod
+# Push release branch
+git push -u origin release/1.2.0
+
+# Create PR: release/1.2.0 → main
+gh pr create --base main --title "Release v1.2.0" --body "Production release v1.2.0"
+
+# After PR merged to main:
+# - GitHub Actions builds production Docker images
+# - Create GitHub release with SBOM/release notes
 ```
 
 ## Branch Strategy
@@ -204,9 +231,9 @@ feature/xyz (development)
 ```
 
 ### Version Tagging by Branch
-- **main branch**: Production releases (v1.0.0, v1.1.0)
-- **develop branch**: All service tags and application releases
-- **feature branches**: No versioning/tagging
+- **main branch**: Production releases (v1.0.0, v1.1.0) - via release branches
+- **develop branch**: All service tags and application releases (AFTER PR merge + build verification)
+- **feature branches**: Version bumps committed here, but NO tagging (tags applied after merge)
 
 ## Environment-Specific Versioning
 
@@ -330,15 +357,17 @@ git checkout v1.0.0
 
 ### DO ✅
 - Use semantic versioning consistently
-- Tag all releases on develop branch  
+- Create PRs for ALL version bumps (develop is protected)
+- Tag AFTER PR merge AND Docker build verification
 - Test version compatibility before production
 - Document breaking changes in commit messages
 - Use specific versions in production environment
 - Keep scraper service versioning independent
-- Merge develop → main for production releases
+- Use release branches for merging develop → main
 
 ### DON'T ❌
-- Tag or version on feature branches
+- Push directly to develop (it's protected - use PRs)
+- Tag before PR merge or build verification
 - Use `latest` tags in production
 - Skip integration testing of version combinations
 - Make breaking changes in minor versions

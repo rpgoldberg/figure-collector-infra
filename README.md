@@ -45,7 +45,7 @@ The application consists of six main services:
 ### Prerequisites
 - Docker & Docker Compose
 - MongoDB Atlas account (or local MongoDB)
-- Node.js 20+ (for development)
+- Node.js 25+ (for development)
 - npm or yarn (for running tests)
 
 ### Environment Setup
