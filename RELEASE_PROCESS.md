@@ -68,44 +68,95 @@ gh pr create \
    # Expect: 133/133 tests passing
    ```
 
-### Phase 4: Tagging Strategy
+### Phase 4: Service Version Tagging on Develop
 
-After successful develop validation:
+After successful develop validation and before creating release branches:
 
 ```bash
-# Service-specific version tag
+# In EACH service repository (all 6)
 git checkout develop
 git pull origin develop
+
+# Service-specific version tag (varies per service)
 git tag -a v[version] -m "Release [service] v[version]"
-
-# System release tag (on backend repo as primary)
-git tag -a release-[version] -m "System Release [version]"
-
-# Push tags
 git push origin v[version]
-git push origin release-[version]
 ```
 
-**Tag Naming Convention:**
-- Service tags: `v2.0.0`, `v1.1.0`
-- System release: `release-2.0.0`
+**Service Tags (on develop):**
+- Backend: `v2.0.1`
+- Frontend: `v2.0.1`
+- Scraper: `v2.0.1`
+- Version Manager: `v1.1.1` (independent versioning)
+- Integration Tests: `v1.0.1`
+- Infrastructure: `v2.0.1`
 
-### Phase 5: Production Promotion
+### Phase 5: Release Branch Creation
 
-1. **Create Main Branch PR**
+After tagging on develop:
+
+```bash
+# In EACH service repository
+git checkout develop
+git checkout -b release/v[version]
+git push -u origin release/v[version]
+```
+
+Creates release branches:
+- `release/v2.0.1` for Backend, Frontend, Scraper, Infrastructure
+- `release/v1.1.1` for Version Manager
+- `release/v1.0.1` for Integration Tests
+
+### Phase 6: Production Promotion
+
+1. **Create Release PRs to Main**
    ```bash
+   # In each service repository
    gh pr create \
      --base main \
-     --head develop \
-     --title "Production Release v[version]" \
-     --body "Promoting tested v[version] to production"
+     --head release/v[version] \
+     --title "Release v[version]" \
+     --body "Production release with security scanning and SBOM"
    ```
 
-2. **Merge to Main**
-   - Should be fast-forward if develop is stable
-   - Triggers production image build with `latest` tag
+2. **Merge Release PRs**
+   - Review all checks passing
+   - Merge to main (triggers production builds)
+   - Builds production Docker images with service version tags
 
-### Phase 6: GitHub Release Creation
+### Phase 7: Application Version Tagging
+
+After ALL release PRs merged to main and production builds verified:
+
+```bash
+# In EACH service repository (all 6)
+git checkout main
+git pull origin main
+
+# Application version tag (SAME across all repos)
+git tag -a v[version]-application -m "Application Release v[version]"
+git push origin v[version]-application
+```
+
+**Why Application Tags:**
+- Marks a verified, coordinated release of ALL services together
+- Triggers Docker images with application tag (e.g., `2.0.1-application`)
+- Enables single-version deployment across all services
+
+**Example:**
+```yaml
+# docker-compose.yml using application tags
+services:
+  backend: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1-application
+  frontend: ghcr.io/rpgoldberg/figure-collector-frontend:2.0.1-application
+  scraper: ghcr.io/rpgoldberg/page-scraper:2.0.1-application
+  version-manager: ghcr.io/rpgoldberg/version-manager:2.0.1-application
+```
+
+**Tag Naming Conventions:**
+- **Service tags**: `v2.0.1`, `v1.1.1`, `v1.0.1` (independent versions on develop)
+- **Application tag**: `v2.0.1-application` (coordinated release on main, all 6 repos)
+
+### Phase 8: GitHub Release Creation
 
 ```bash
 # Create GitHub release
@@ -211,18 +262,32 @@ VERSION_MANAGER_TAG: test-1.1.0
 
 ## Release Checklist
 
+### Pre-Release
 - [ ] All HIGH/CRITICAL vulnerabilities addressed
 - [ ] Unit tests passing (100%)
 - [ ] Integration tests passing (133/133)
 - [ ] Security scanning complete
-- [ ] Release branches up to date
-- [ ] PRs created and reviewed
-- [ ] Develop branch validated
-- [ ] Version tags created
-- [ ] Main branch updated
-- [ ] GitHub releases published
+- [ ] Version bumps PR'd to develop and merged
+
+### Develop Branch
+- [ ] Service version tags created (all 6 repos)
+- [ ] Release branches created (all 6 repos)
+- [ ] Docker images with `develop` tag verified
+
+### Main Branch
+- [ ] Release PRs created (all 6 repos)
+- [ ] Release PRs reviewed and merged
+- [ ] Production Docker images built successfully
+- [ ] Service version tags on main (v2.0.1, v1.1.1, v1.0.1)
+- [ ] **Application version tags on ALL 6 repos** (v2.0.1-application)
+- [ ] Docker images with application tags verified
+
+### Post-Release
+- [ ] GitHub releases published (all 6 repos)
+- [ ] SBOM artifacts attached to releases
 - [ ] Discord notifications configured
 - [ ] Post-release monitoring active
+- [ ] Version registry (version.json) updated
 
 ## Version History
 
