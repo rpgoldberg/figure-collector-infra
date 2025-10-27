@@ -224,10 +224,84 @@ VERSION_MANAGER_TAG: test-1.1.0
 - [ ] Discord notifications configured
 - [ ] Post-release monitoring active
 
+## Docker Tagging Strategy
+
+### Tag Naming Conventions
+
+**Git Tags** (in repositories):
+- Have `v` prefix: `v2.0.1`, `v2.0.1-application`, `v1.1.1`
+- Used to trigger GitHub Actions workflows
+
+**Docker Tags** (in GHCR):
+- NO `v` prefix: `2.0.1`, `2.0.1-application`, `1.1.1`
+- Generated automatically by `docker/metadata-action`
+
+### Dual-Tagging for Application Releases
+
+When you push a git tag with `-application` suffix, the Docker workflow automatically generates **BOTH** tags pointing to the **SAME image digest**:
+
+```bash
+# Push git tag with -application suffix
+git push origin v2.0.1-application
+
+# GitHub Actions automatically generates BOTH Docker tags:
+# ✅ ghcr.io/[repo]:2.0.1-application  (application release)
+# ✅ ghcr.io/[repo]:2.0.1              (service version)
+# ⭐ Both point to the EXACT SAME image digest
+```
+
+### Workflow Configuration
+
+The `docker-publish.yml` workflow uses these tag patterns:
+
+```yaml
+tags: |
+  # Service version tags (v2.0.1 -> 2.0.1)
+  type=semver,pattern={{version}}
+
+  # Application version tags (v2.0.1-application -> BOTH tags)
+  type=match,pattern=v(.+)-application,group=1,suffix=-application
+  type=match,pattern=v(.+)-application,group=1
+```
+
+### Tag Generation Examples
+
+| Git Tag Push | Docker Tags Generated | Use Case |
+|--------------|----------------------|----------|
+| `v2.0.1` | `2.0.1` | Independent service version |
+| `v2.0.1-application` | `2.0.1-application` AND `2.0.1` | Coordinated application release |
+| `v1.1.1` | `1.1.1` | Version manager service version |
+
+### Deployment Flexibility
+
+Since the same image has multiple tags, you can deploy using either:
+
+```yaml
+# Using service version (specific to each service)
+services:
+  backend:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1
+
+# Using application version (coordinated across all services)
+services:
+  backend:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1-application
+
+# Both pull the EXACT SAME image (same SHA256 digest)
+```
+
+### Why This Matters
+
+- **Same Image Digest**: No risk of slight variations between builds
+- **Deployment Flexibility**: Use service or application tags as needed
+- **Efficient Storage**: Docker registries store layers only once
+- **Clear Coordination**: Application tags mark verified, coordinated releases
+
 ## Version History
 
 | Release | Date | Major Changes |
 |---------|------|---------------|
+| 2.0.1 | 2025-10-27 | Fixed Docker dual-tagging strategy, enhanced release documentation |
 | 2.0.0 | TBD | Security scanning, SBOM generation, comprehensive testing |
 | 1.1.0 | Previous | Version manager updates |
 
