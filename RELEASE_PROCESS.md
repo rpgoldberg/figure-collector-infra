@@ -252,17 +252,40 @@ git push origin v2.0.1-application
 
 ### Workflow Configuration
 
-The `docker-publish.yml` workflow uses these tag patterns:
+The `docker-publish.yml` workflow dynamically reads service versions and uses tag patterns to generate Docker tags.
+
+**Version Source Files:**
+- **Version Manager**: Reads from `version.json` → `services['version-manager'].version`
+- **Backend/Frontend/Scraper**: Read from `package.json` → `.version`
+
+**Tag Generation Patterns:**
 
 ```yaml
-tags: |
-  # Service version tags (v2.0.1 -> 2.0.1)
-  type=semver,pattern={{version}}
+# Step 1: Read service version dynamically
+- name: Read service version from package.json   # (or version.json for version-manager)
+  id: service-version
+  run: |
+    SERVICE_VERSION=$(node -pe "require('./package.json').version")  # or version.json
+    echo "version=$SERVICE_VERSION" >> $GITHUB_OUTPUT
 
-  # Application version tags (v2.0.1-application -> BOTH tags)
+# Step 2: Generate Docker tags based on git tag
+tags: |
+  # Service version tag (from package.json or version.json)
+  # Only enabled when git tag contains -application suffix
+  type=raw,value=${{ steps.service-version.outputs.version }},enable=${{ contains(github.ref, '-application') }}
+
+  # Application version tag (v2.0.1-application -> 2.0.1-application)
+  # Extracts version and preserves -application suffix
   type=match,pattern=v(.+)-application,group=1,suffix=-application
-  type=match,pattern=v(.+)-application,group=1
 ```
+
+**How It Works:**
+1. Push git tag `v2.0.1-application` to any service
+2. Workflow reads service version from its version file (package.json or version.json)
+3. **Both Docker tags** are created in the SAME build:
+   - `2.0.1` (from service version file)
+   - `2.0.1-application` (from git tag pattern)
+4. Both tags point to the EXACT SAME digest
 
 ### Tag Generation Examples
 
@@ -296,6 +319,7 @@ services:
 - **Deployment Flexibility**: Use service or application tags as needed
 - **Efficient Storage**: Docker registries store layers only once
 - **Clear Coordination**: Application tags mark verified, coordinated releases
+- **Decoupled Versioning**: Each service maintains its version independently (in package.json or version.json) while coordinated releases use application tags
 
 ## Version History
 
