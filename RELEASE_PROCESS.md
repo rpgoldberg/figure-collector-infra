@@ -289,6 +289,103 @@ VERSION_MANAGER_TAG: test-1.1.0
 - [ ] Post-release monitoring active
 - [ ] Version registry (version.json) updated
 
+## Docker Tagging Strategy
+
+### Tag Naming Conventions
+
+**Git Tags** (in repositories):
+- Have `v` prefix: `v2.0.1`, `v2.0.1-application`, `v1.1.1`
+- Used to trigger GitHub Actions workflows
+
+**Docker Tags** (in GHCR):
+- NO `v` prefix: `2.0.1`, `2.0.1-application`, `1.1.1`
+- Generated automatically by `docker/metadata-action`
+
+### Dual-Tagging for Application Releases
+
+When you push a git tag with `-application` suffix, the Docker workflow automatically generates **BOTH** tags pointing to the **SAME image digest**:
+
+```bash
+# Push git tag with -application suffix
+git push origin v2.0.1-application
+
+# GitHub Actions automatically generates BOTH Docker tags:
+# ✅ ghcr.io/[repo]:2.0.1-application  (application release)
+# ✅ ghcr.io/[repo]:2.0.1              (service version)
+# ⭐ Both point to the EXACT SAME image digest
+```
+
+### Workflow Configuration
+
+The `docker-publish.yml` workflow dynamically reads service versions and uses tag patterns to generate Docker tags.
+
+**Version Source Files:**
+- **Version Manager**: Reads from `version.json` → `services['version-manager'].version`
+- **Backend/Frontend/Scraper**: Read from `package.json` → `.version`
+
+**Tag Generation Patterns:**
+
+```yaml
+# Step 1: Read service version dynamically
+- name: Read service version from package.json   # (or version.json for version-manager)
+  id: service-version
+  run: |
+    SERVICE_VERSION=$(node -pe "require('./package.json').version")  # or version.json
+    echo "version=$SERVICE_VERSION" >> $GITHUB_OUTPUT
+
+# Step 2: Generate Docker tags based on git tag
+tags: |
+  # Service version tag (from package.json or version.json)
+  # Only enabled when git tag contains -application suffix
+  type=raw,value=${{ steps.service-version.outputs.version }},enable=${{ contains(github.ref, '-application') }}
+
+  # Application version tag (v2.0.1-application -> 2.0.1-application)
+  # Extracts version and preserves -application suffix
+  type=match,pattern=v(.+)-application,group=1,suffix=-application
+```
+
+**How It Works:**
+1. Push git tag `v2.0.1-application` to any service
+2. Workflow reads service version from its version file (package.json or version.json)
+3. **Both Docker tags** are created in the SAME build:
+   - `2.0.1` (from service version file)
+   - `2.0.1-application` (from git tag pattern)
+4. Both tags point to the EXACT SAME digest
+
+### Tag Generation Examples
+
+| Git Tag Push | Docker Tags Generated | Use Case |
+|--------------|----------------------|----------|
+| `v2.0.1` | `2.0.1` | Independent service version |
+| `v2.0.1-application` | `2.0.1-application` AND `2.0.1` | Coordinated application release |
+| `v1.1.1` | `1.1.1` | Version manager service version |
+
+### Deployment Flexibility
+
+Since the same image has multiple tags, you can deploy using either:
+
+```yaml
+# Using service version (specific to each service)
+services:
+  backend:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1
+
+# Using application version (coordinated across all services)
+services:
+  backend:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1-application
+
+# Both pull the EXACT SAME image (same SHA256 digest)
+```
+
+### Why This Matters
+
+- **Same Image Digest**: No risk of slight variations between builds
+- **Deployment Flexibility**: Use service or application tags as needed
+- **Efficient Storage**: Docker registries store layers only once
+- **Clear Coordination**: Application tags mark verified, coordinated releases
+- **Decoupled Versioning**: Each service maintains its version independently (in package.json or version.json) while coordinated releases use application tags
+
 ## Version History
 
 | Release | Date | Major Changes |
