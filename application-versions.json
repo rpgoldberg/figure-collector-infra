@@ -1,0 +1,12 @@
+{
+  "application": "2.0.2",
+  "services": {
+    "backend": "2.0.2",
+    "frontend": "2.0.2",
+    "scraper": "2.0.2",
+    "version-manager": "1.1.2",
+    "integration-tests": "1.0.2"
+  },
+  "released": "2025-10-30",
+  "notes": "Simplified versioning strategy - removed dual-tagging complexity"
+}
