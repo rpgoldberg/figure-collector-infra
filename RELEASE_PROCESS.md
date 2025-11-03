@@ -68,44 +68,95 @@ gh pr create \
    # Expect: 133/133 tests passing
    ```
 
-### Phase 4: Tagging Strategy
+### Phase 4: Service Version Tagging on Develop
 
-After successful develop validation:
+After successful develop validation and before creating release branches:
 
 ```bash
-# Service-specific version tag
+# In EACH service repository (all 6)
 git checkout develop
 git pull origin develop
+
+# Service-specific version tag (varies per service)
 git tag -a v[version] -m "Release [service] v[version]"
-
-# System release tag (on backend repo as primary)
-git tag -a release-[version] -m "System Release [version]"
-
-# Push tags
 git push origin v[version]
-git push origin release-[version]
 ```
 
-**Tag Naming Convention:**
-- Service tags: `v2.0.0`, `v1.1.0`
-- System release: `release-2.0.0`
+**Service Tags (on develop):**
+- Backend: `v2.0.1`
+- Frontend: `v2.0.1`
+- Scraper: `v2.0.1`
+- Version Manager: `v1.1.1` (independent versioning)
+- Integration Tests: `v1.0.1`
+- Infrastructure: `v2.0.1`
 
-### Phase 5: Production Promotion
+### Phase 5: Release Branch Creation
 
-1. **Create Main Branch PR**
+After tagging on develop:
+
+```bash
+# In EACH service repository
+git checkout develop
+git checkout -b release/v[version]
+git push -u origin release/v[version]
+```
+
+Creates release branches:
+- `release/v2.0.1` for Backend, Frontend, Scraper, Infrastructure
+- `release/v1.1.1` for Version Manager
+- `release/v1.0.1` for Integration Tests
+
+### Phase 6: Production Promotion
+
+1. **Create Release PRs to Main**
    ```bash
+   # In each service repository
    gh pr create \
      --base main \
-     --head develop \
-     --title "Production Release v[version]" \
-     --body "Promoting tested v[version] to production"
+     --head release/v[version] \
+     --title "Release v[version]" \
+     --body "Production release with security scanning and SBOM"
    ```
 
-2. **Merge to Main**
-   - Should be fast-forward if develop is stable
-   - Triggers production image build with `latest` tag
+2. **Merge Release PRs**
+   - Review all checks passing
+   - Merge to main (triggers production builds)
+   - Builds production Docker images with service version tags
 
-### Phase 6: GitHub Release Creation
+### Phase 7: Application Version Tagging
+
+After ALL release PRs merged to main and production builds verified:
+
+```bash
+# In EACH service repository (all 6)
+git checkout main
+git pull origin main
+
+# Application version tag (SAME across all repos)
+git tag -a v[version]-application -m "Application Release v[version]"
+git push origin v[version]-application
+```
+
+**Why Application Tags:**
+- Marks a verified, coordinated release of ALL services together
+- Triggers Docker images with application tag (e.g., `2.0.1-application`)
+- Enables single-version deployment across all services
+
+**Example:**
+```yaml
+# docker-compose.yml using application tags
+services:
+  backend: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1-application
+  frontend: ghcr.io/rpgoldberg/figure-collector-frontend:2.0.1-application
+  scraper: ghcr.io/rpgoldberg/page-scraper:2.0.1-application
+  version-manager: ghcr.io/rpgoldberg/version-manager:2.0.1-application
+```
+
+**Tag Naming Conventions:**
+- **Service tags**: `v2.0.1`, `v1.1.1`, `v1.0.1` (independent versions on develop)
+- **Application tag**: `v2.0.1-application` (coordinated release on main, all 6 repos)
+
+### Phase 8: GitHub Release Creation
 
 ```bash
 # Create GitHub release
@@ -211,18 +262,129 @@ VERSION_MANAGER_TAG: test-1.1.0
 
 ## Release Checklist
 
+### Pre-Release
 - [ ] All HIGH/CRITICAL vulnerabilities addressed
 - [ ] Unit tests passing (100%)
 - [ ] Integration tests passing (133/133)
 - [ ] Security scanning complete
-- [ ] Release branches up to date
-- [ ] PRs created and reviewed
-- [ ] Develop branch validated
-- [ ] Version tags created
-- [ ] Main branch updated
-- [ ] GitHub releases published
+- [ ] Version bumps PR'd to develop and merged
+
+### Develop Branch
+- [ ] Service version tags created (all 6 repos)
+- [ ] Release branches created (all 6 repos)
+- [ ] Docker images with `develop` tag verified
+
+### Main Branch
+- [ ] Release PRs created (all 6 repos)
+- [ ] Release PRs reviewed and merged
+- [ ] Production Docker images built successfully
+- [ ] Service version tags on main (v2.0.1, v1.1.1, v1.0.1)
+- [ ] **Application version tags on ALL 6 repos** (v2.0.1-application)
+- [ ] Docker images with application tags verified
+
+### Post-Release
+- [ ] GitHub releases published (all 6 repos)
+- [ ] SBOM artifacts attached to releases
 - [ ] Discord notifications configured
 - [ ] Post-release monitoring active
+- [ ] Version registry (version.json) updated
+
+## Docker Tagging Strategy
+
+### Tag Naming Conventions
+
+**Git Tags** (in repositories):
+- Have `v` prefix: `v2.0.1`, `v2.0.1-application`, `v1.1.1`
+- Used to trigger GitHub Actions workflows
+
+**Docker Tags** (in GHCR):
+- NO `v` prefix: `2.0.1`, `2.0.1-application`, `1.1.1`
+- Generated automatically by `docker/metadata-action`
+
+### Dual-Tagging for Application Releases
+
+When you push a git tag with `-application` suffix, the Docker workflow automatically generates **BOTH** tags pointing to the **SAME image digest**:
+
+```bash
+# Push git tag with -application suffix
+git push origin v2.0.1-application
+
+# GitHub Actions automatically generates BOTH Docker tags:
+# ✅ ghcr.io/[repo]:2.0.1-application  (application release)
+# ✅ ghcr.io/[repo]:2.0.1              (service version)
+# ⭐ Both point to the EXACT SAME image digest
+```
+
+### Workflow Configuration
+
+The `docker-publish.yml` workflow dynamically reads service versions and uses tag patterns to generate Docker tags.
+
+**Version Source Files:**
+- **Version Manager**: Reads from `version.json` → `services['version-manager'].version`
+- **Backend/Frontend/Scraper**: Read from `package.json` → `.version`
+
+**Tag Generation Patterns:**
+
+```yaml
+# Step 1: Read service version dynamically
+- name: Read service version from package.json   # (or version.json for version-manager)
+  id: service-version
+  run: |
+    SERVICE_VERSION=$(node -pe "require('./package.json').version")  # or version.json
+    echo "version=$SERVICE_VERSION" >> $GITHUB_OUTPUT
+
+# Step 2: Generate Docker tags based on git tag
+tags: |
+  # Service version tag (from package.json or version.json)
+  # Only enabled when git tag contains -application suffix
+  type=raw,value=${{ steps.service-version.outputs.version }},enable=${{ contains(github.ref, '-application') }}
+
+  # Application version tag (v2.0.1-application -> 2.0.1-application)
+  # Extracts version and preserves -application suffix
+  type=match,pattern=v(.+)-application,group=1,suffix=-application
+```
+
+**How It Works:**
+1. Push git tag `v2.0.1-application` to any service
+2. Workflow reads service version from its version file (package.json or version.json)
+3. **Both Docker tags** are created in the SAME build:
+   - `2.0.1` (from service version file)
+   - `2.0.1-application` (from git tag pattern)
+4. Both tags point to the EXACT SAME digest
+
+### Tag Generation Examples
+
+| Git Tag Push | Docker Tags Generated | Use Case |
+|--------------|----------------------|----------|
+| `v2.0.1` | `2.0.1` | Independent service version |
+| `v2.0.1-application` | `2.0.1-application` AND `2.0.1` | Coordinated application release |
+| `v1.1.1` | `1.1.1` | Version manager service version |
+
+### Deployment Flexibility
+
+Since the same image has multiple tags, you can deploy using either:
+
+```yaml
+# Using service version (specific to each service)
+services:
+  backend:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1
+
+# Using application version (coordinated across all services)
+services:
+  backend:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:2.0.1-application
+
+# Both pull the EXACT SAME image (same SHA256 digest)
+```
+
+### Why This Matters
+
+- **Same Image Digest**: No risk of slight variations between builds
+- **Deployment Flexibility**: Use service or application tags as needed
+- **Efficient Storage**: Docker registries store layers only once
+- **Clear Coordination**: Application tags mark verified, coordinated releases
+- **Decoupled Versioning**: Each service maintains its version independently (in package.json or version.json) while coordinated releases use application tags
 
 ## Docker Tagging Strategy
 
