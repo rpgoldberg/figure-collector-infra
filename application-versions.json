@@ -4,7 +4,7 @@
     "backend": "2.1.0",
     "frontend": "2.1.0",
     "scraper": "2.0.3",
-    "version-manager": "1.2.0",
+    "version-manager": "1.1.4",
     "integration-tests": "1.0.2"
   },
   "released": null,
