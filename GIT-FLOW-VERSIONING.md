@@ -1,389 +1,315 @@
-# Git Flow & Versioning Workflow Reference
+# Git Flow & Versioning Workflow
 
 ## Overview
 
-This document provides the exact command sequences for managing git flow and versioning across the Figure Collector microservices architecture.
+Git flow and versioning workflow for Figure Collector microservices.
 
 ## Repository Structure
 
-- `figure-collector-backend/` - Backend service repository
-- `figure-collector-frontend/` - Frontend service repository  
-- `page-scraper/` - Standalone scraping service repository
-- `version-manager/` - Version management service repository
-- `figure-collector-integration-tests/` - Docker-based integration testing suite
-- `figure-collector-infra/` - Infrastructure and cross-service orchestration repository
+- `figure-collector-backend/` - Backend service
+- `figure-collector-frontend/` - Frontend service
+- `page-scraper/` - Scraping service
+- `figure-collector-integration-tests/` - Integration tests
+- `figure-collector-infra/` - Infrastructure and orchestration
 
 ## Core Principles
 
-1. **Develop branch is protected** - all changes require PRs (including version bumps)
-2. **Version bumps via PR** - create feature branch → bump version → PR to develop
-3. **Tag AFTER merge and build verification** - never tag before Docker builds confirm success
-4. **Main branch** gets merges from develop via release branches for production
-5. **Each service versions independently**
-6. **Application releases coordinate service versions**
+1. ✅ **Develop branch is protected** - All changes require PRs
+2. ✅ **Version bumps IN the PR** - Before merging to develop
+3. ✅ **Test develop before release** - Docker images must pass tests
+4. ✅ **Tag after merge to main** - Production releases only
+5. ✅ **Services version independently** - Each has own package.json
 
-## Complete Workflow Example
+## Complete Workflow
 
-### Scenario: Adding new backend API endpoint
+### 1. Feature Development
 
 ```bash
-# === PHASE 1: Feature Development ===
+# Start from develop
 cd figure-collector-backend
 git checkout develop
 git pull origin develop
-git checkout -b feature/add-endpoint
 
-# ... code the feature ...
+# Create feature branch
+git checkout -b feature/add-user-stats
+
+# Implement feature with tests
+# ... code ...
+
+# Bump version in package.json manually
+# Edit package.json: "version": "2.1.0"
+
+# Commit all changes INCLUDING version bump
 git add .
-git commit -m "Add new user stats API endpoint"
-git commit -m "Add validation for stats endpoint"  
-git commit -m "Add tests for user stats"
-git push origin feature/add-endpoint
+git commit -m "Add user stats API endpoint"
+git push -u origin feature/add-user-stats
+```
 
-# === PHASE 2: PR and Review ===
-# Create PR: feature/add-endpoint → develop (via GitHub/GitLab UI)
-# Review, approve, merge
+### 2. Create PR
 
-# === PHASE 3: Version Bumping (VIA PR TO DEVELOP) ===
-git checkout develop
-git pull origin develop  # Gets the merged feature changes
+```bash
+# Create PR to develop (version bump included)
+gh pr create --base develop --title "Add user stats endpoint" --body "
+## Changes
+- New /api/stats endpoint
+- Version bump: 2.0.2 → 2.1.0
 
-# Create feature branch for version bump
-git checkout -b feature/bump-v1.1.0
+## Testing
+- Added unit tests
+- Added integration tests
+- Coverage: 92%
+"
+```
 
-# Bump the version using script
-./scripts/version-manager.sh bump backend minor  # 1.0.0 → 1.1.0
+### 3. Review and Merge
 
-# Commit and push the version bump
-git add .
-git commit -m "Bump backend version to v1.1.0"
-git push -u origin feature/bump-v1.1.0
+```bash
+# After approval, squash and merge
+# This keeps develop history clean
+```
 
-# Create PR: feature/bump-v1.1.0 → develop
-gh pr create --base develop --title "Bump to v1.1.0" --body "Version bump for v1.1.0"
+### 4. Test Develop Branch
 
-# After PR merged AND Docker builds verified:
-git checkout develop
-git pull origin develop
-git tag v1.1.0
-git push origin --tags
+```bash
+# After merge, Docker builds trigger automatically
+# Test the new Docker images on develop branch
+# Verify functionality works as expected
+```
 
-# === PHASE 4: Application Release (INFRA REPO VIA PR) ===
-cd ../figure-collector-infra
-git checkout develop
-git pull origin develop
+### 5. Create Release
 
-# Create feature branch for application release
-git checkout -b feature/bump-v1.2.0
-
-# Create application release with current service versions
-./scripts/version-manager.sh app-release 1.2.0  # App v1.2.0 with backend v1.1.0
-
-git add .
-git commit -m "Application release v1.2.0"
-git push -u origin feature/bump-v1.2.0
-
-# Create PR: feature/bump-v1.2.0 → develop
-gh pr create --base develop --title "Bump to v1.2.0" --body "Application release v1.2.0"
-
-# After PR merged AND Docker builds verified:
+```bash
+# After testing passes, create release branch
 git checkout develop
 git pull origin develop
-git tag v1.2.0
-git push origin --tags
+git checkout -b release/v2.1.0
 
-# === PHASE 5: Production Release (RELEASE BRANCHES) ===
-# Create release branch from develop (after tags applied)
-git checkout develop
-git pull origin develop
-git checkout -b release/1.2.0
+# Create PR to main
+gh pr create --base main --title "Release v2.1.0" --body "
+## Release Notes
+- Backend v2.1.0: User stats API
+- Frontend v2.1.0: Dark mode support
 
-# Push release branch
-git push -u origin release/1.2.0
-
-# Create PR: release/1.2.0 → main (fast-forward merge)
-gh pr create --base main --title "Release v1.2.0" --body "Production release v1.2.0"
-
-# After PR merged to main:
-# - GitHub Actions builds production Docker images with version tags
-# - Create GitHub release with SBOM, release notes, migration guides
+## Testing
+- Develop branch tested ✓
+- All services healthy ✓
+"
 ```
 
-## Multi-Version Development Support
-
-### Concurrent Feature Development
+### 6. Tag Release
 
 ```bash
-# Developer A: Working on v1.1.0 feature
-git checkout develop
-git checkout -b feature/user-stats
-# ... develop feature ...
+# After merge to main
+git checkout main
+git pull origin main
 
-# Developer B: Working on v1.2.0 feature  
-git checkout develop  # Start from latest
-git checkout -b feature/new-auth-system
-# ... develop feature ...
+# Tag the release
+git tag -a v2.1.0 -m "Application Release v2.1.0"
+git push origin v2.1.0
 
-# Developer C: Critical v1.0.1 patch needed
-git checkout v1.0.0  # Start from production tag
-git checkout -b hotfix/security-patch
-# ... fix critical bug ...
-```
-
-### Different Merge Strategies
-
-```bash
-# Feature A merges first:
-# feature/user-stats → develop → bump to v1.1.0 → tag v1.1.0
-
-# Feature B merges later:
-# feature/new-auth-system → develop → bump to v1.2.0 → tag v1.2.0
-
-# Hotfix goes directly to main:
-# hotfix/security-patch → main → bump to v1.0.1 → tag v1.0.1 → merge back to develop
-```
-
-## Version Management Commands
-
-### Show Current Versions
-```bash
-cd figure-collector-infra
-./scripts/version-manager.sh show
-```
-
-### Bump Individual Service Version
-```bash
-# Patch version (bug fixes)
-./scripts/version-manager.sh bump backend patch
-
-# Minor version (new features)
-./scripts/version-manager.sh bump backend minor
-
-# Major version (breaking changes)
-./scripts/version-manager.sh bump backend major
-```
-
-### Create Application Release
-```bash
-# Captures current versions of all services
-./scripts/version-manager.sh app-release 1.2.0
-```
-
-### Sync Environment Files
-```bash
-# Update .env files with current service versions
-./scripts/version-manager.sh sync
-```
-
-### Check Version Compatibility
-```bash
-# Check if current service combination has been tested
-./scripts/version-manager.sh check
-```
-
-## Multi-Service Coordination
-
-### When Multiple Services Need Updates
-
-```bash
-# 1. Backend changes first
-cd figure-collector-backend
-# ... merge feature → develop → bump → tag v1.1.0 ...
-
-# 2. Frontend changes second  
-cd figure-collector-frontend
-# ... merge feature → develop → bump → tag v1.0.1 ...
-
-# 3. Application release coordinates them
-cd figure-collector-infra
-./scripts/version-manager.sh app-release 1.2.0
-# Captures: backend v1.1.0, frontend v1.0.1, scraper v1.0.0
-```
-
-## Production Release Strategies
-
-### Release Branch Workflow (Required for Protected Branches)
-```bash
-# Create release branch from develop (after version tags applied)
-git checkout develop
-git pull origin develop
-git checkout -b release/1.2.0
-
-# Push release branch
-git push -u origin release/1.2.0
-
-# Create PR: release/1.2.0 → main
-gh pr create --base main --title "Release v1.2.0" --body "Production release v1.2.0"
-
-# After PR merged to main:
-# - GitHub Actions builds production Docker images
-# - Create GitHub release with SBOM/release notes
+# Also tag individual services if needed
+git tag -a backend-v2.1.0 -m "Backend v2.1.0"
+git push origin backend-v2.1.0
 ```
 
 ## Branch Strategy
 
+### Branch Types
+
 ```
 main (production)
   ↑
+release/v2.1.0 ← PR from develop
+  ↑
 develop (integration)
   ↑
-feature/xyz (development)
+feature/add-stats ← Feature branches
 ```
 
-### Version Tagging by Branch
-- **main branch**: Production releases (v1.0.0, v1.1.0) - via release branches
-- **develop branch**: All service tags and application releases (AFTER PR merge + build verification)
-- **feature branches**: Version bumps committed here, but NO tagging (tags applied after merge)
+### Branch Rules
 
-## Environment-Specific Versioning
+- **main**: Production releases only, protected
+- **develop**: Integration branch, protected, requires PRs
+- **feature/***: Feature development
+- **release/***: Release preparation
+- **hotfix/***: Emergency production fixes
 
-### Development Environment
+## Coordinated Releases (Multiple Services)
+
+When releasing multiple services together:
+
+### 1. Prepare All Service PRs
+
 ```bash
-# Can use latest or specific versions
-BACKEND_TAG=latest      # or v1.1.0-dev
-FRONTEND_TAG=latest     # or v1.0.1-dev
-SCRAPER_TAG=latest      # or v1.0.0-dev
-VERSION_MANAGER_TAG=latest  # or v1.1.0-dev
-INTEGRATION_TESTS_TAG=latest  # or v1.1.0-dev
-```
-
-### Test/Staging Environment
-```bash
-# Use release candidates or specific versions
-BACKEND_TAG=v1.1.0
-FRONTEND_TAG=v1.0.1
-SCRAPER_TAG=v1.0.0
-VERSION_MANAGER_TAG=v1.1.0
-INTEGRATION_TESTS_TAG=v1.1.0
-```
-
-### Production Environment
-```bash
-# Always use specific stable versions
-BACKEND_TAG=v1.1.0
-FRONTEND_TAG=v1.0.1
-SCRAPER_TAG=v1.0.0
-VERSION_MANAGER_TAG=v1.1.0
-INTEGRATION_TESTS_TAG=v1.1.0
-```
-
-## Independent Service Versioning
-
-### page-scraper (Standalone Service)
-```bash
-# Scraper is completely independent
-cd page-scraper
-git checkout develop
-# ... make changes ...
-./scripts/version-manager.sh bump scraper minor  # Independent versioning
-git tag v1.2.0  # Independent of other services
-git push origin develop --tags
-```
-
-### Comprehensive Service Ecosystem
-```bash
-# Each service manages its own versioning
-# Integration tests coordinate service compatibility
-# Version manager validates service version combinations
-```
-
-### New Integration Test Service
-```bash
-# Comprehensive Docker-based integration testing
-cd figure-collector-integration-tests
-git checkout develop
-# ... update test suites ...
-./scripts/version-manager.sh bump integration-tests minor
-git tag v1.1.0
-git push origin develop --tags
-```
-
-### SHALLTEAR PROTOCOL
-- 5-phase Docker startup
-- Cross-service health checks
-- Optimized timeout configurations
-- Enhanced test infrastructure
-
-### figure-collector services (Coupled)
-```bash
-# Backend and frontend are often coordinated
-# But can still version independently when changes don't affect each other
-# Integration tests validate service compatibility
-```
-
-## Rollback Strategy
-
-### Service Rollback
-```bash
-# Rollback to previous service version
+# Backend PR
 cd figure-collector-backend
-git checkout v1.0.0  # Previous stable version
-# Build and deploy specific version
+git checkout -b feature/atlas-search
+# ... implement ...
+# Edit package.json: "version": "2.1.0"
+gh pr create --base develop
+
+# Frontend PR
+cd ../figure-collector-frontend
+git checkout -b feature/dark-mode
+# ... implement ...
+# Edit package.json: "version": "2.1.0"
+gh pr create --base develop
+
+# Infrastructure PR (update APP_VERSION)
+cd ../figure-collector-infra
+git checkout -b release/v2.1.0-prep
+# Edit docker-compose.yml: APP_VERSION=2.1.0
+gh pr create --base develop
 ```
 
-### Application Rollback
+### 2. Merge All PRs
+
 ```bash
-# Rollback entire application to previous tested combination
+# Merge all service PRs to develop
+# Wait for Docker builds to complete
+```
+
+### 3. Test Develop
+
+```bash
+# Test all services together on develop branch
+# Verify integration works
+# Check version display in UI
+```
+
+### 4. Create Release
+
+```bash
+# Create release branch in infrastructure
 cd figure-collector-infra
-git checkout v1.1.0  # Previous app version
-./deploy.sh prod      # Deploys with previous service versions
+git checkout develop
+git pull
+git checkout -b release/v2.1.0
+gh pr create --base main --title "Release v2.1.0"
+
+# After merge, tag it
+git checkout main
+git pull
+git tag -a v2.1.0 -m "Release v2.1.0"
+git push origin v2.1.0
 ```
 
-## Troubleshooting Commands
+## Hotfix Workflow
 
-### Check Current State
+For urgent production fixes:
+
 ```bash
-# Show all versions
-./scripts/version-manager.sh show
+# Create hotfix branch from main
+git checkout main
+git pull
+git checkout -b hotfix/security-patch
 
-# Check what would be deployed
-./scripts/version-manager.sh check
+# Fix the issue
+# ... code ...
 
-# Sync environment files if needed
-./scripts/version-manager.sh sync
+# Bump PATCH version
+# Edit package.json: "2.1.0" → "2.1.1"
+
+git add .
+git commit -m "Fix security vulnerability"
+git push -u origin hotfix/security-patch
+
+# Create PRs to BOTH main and develop
+gh pr create --base main --title "Hotfix: Security patch"
+gh pr create --base develop --title "Hotfix: Security patch"
+
+# After merge to main, tag it
+git checkout main
+git pull
+git tag -a v2.1.1 -m "Hotfix v2.1.1"
+git push origin v2.1.1
 ```
 
-### Fix Version Conflicts
+## Best Practices
+
+### Version Bumps
+
+✅ **Do:**
+- Bump version in package.json IN the feature PR
+- Follow semantic versioning (major.minor.patch)
+- Include version bump in PR title
+
+❌ **Don't:**
+- Merge PR first, then bump version in separate commit
+- Forget to bump version before merge
+- Commit directly to develop
+
+### Commit Messages
+
+✅ **Good:**
 ```bash
-# Reset to known good state
-git checkout v1.0.0
-./scripts/version-manager.sh sync
-
-# Or fix specific service version
-./scripts/version-manager.sh bump backend patch
+git commit -m "Add user stats API endpoint"
+git commit -m "Fix authentication token expiry"
+git commit -m "Update dark mode styling"
 ```
 
-## Best Practices Checklist
+❌ **Bad:**
+```bash
+git commit -m "stuff"
+git commit -m "fixed it"
+git commit -m "WIP"
+```
 
-### DO ✅
-- Use semantic versioning consistently
-- Create PRs for ALL version bumps (develop is protected)
-- Tag AFTER PR merge AND Docker build verification
-- Test version compatibility before production
-- Document breaking changes in commit messages
-- Use specific versions in production environment
-- Keep scraper service versioning independent
-- Use release branches for merging develop → main
+### PR Strategy
 
-### DON'T ❌
-- Push directly to develop (it's protected - use PRs)
-- Tag before PR merge or build verification
-- Use `latest` tags in production
-- Skip integration testing of version combinations
-- Make breaking changes in minor versions
-- Deploy untested service version combinations
-- Force version bumps without actual changes
+✅ **Use Draft PRs for WIP:**
+```bash
+gh pr create --draft --title "WIP: Add feature"
+# Push multiple commits to fix CI
+# Squash commits when ready
+gh pr ready
+```
 
-## Date Formats
+✅ **Squash and Merge:**
+- Keeps develop history clean
+- One commit per feature
+- Easy to revert if needed
 
-- **Version files**: DD-MMM-YYYY (e.g., "08-Jan-2025")
-- **Git commits**: Standard git format
-- **React app display**: "v1.0.0 • 08-Jan-2025"
+## Troubleshooting
 
-## Future Considerations
+### PR Checks Failing
 
-### As the system grows:
-- Consider automated version bumping in CI/CD
-- Implement automated compatibility testing
-- Add service mesh for version routing
-- Expand to full independent service versioning if needed
+1. **Run CI checks locally first:**
+   ```bash
+   make ci-local  # Runs same checks as GitHub Actions
+   ```
+
+2. **Fix issues in draft PR:**
+   ```bash
+   gh pr create --draft
+   # Push fixes
+   # Squash when green
+   gh pr ready
+   ```
+
+### Version Conflicts
+
+If multiple PRs bump the same version:
+1. First PR wins
+2. Second PR must resolve conflict and bump higher
+3. Communicate with team
+
+### Forgot Version Bump
+
+If PR merged without version bump:
+1. Create new PR with version bump
+2. Document the mistake
+3. Don't commit directly to develop
+
+## Migration Notes
+
+**Old system (removed):**
+- ❌ version-manager service
+- ❌ version.json file
+- ❌ Bump scripts
+- ❌ Service registration
+
+**New system:**
+- ✅ Manual version bumps in package.json
+- ✅ Git workflow handles versioning
+- ✅ Simple and transparent

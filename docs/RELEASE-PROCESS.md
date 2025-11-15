@@ -1,110 +1,129 @@
 # Release Process for Figure Collector Services
 
-## CRITICAL: Version Bump Timing
+## Core Principle: Version Bumps Before Merge
 
-**VERSION BUMPS MUST HAPPEN IN THE PR BEFORE MERGING TO DEVELOP**
+**ALL VERSION BUMPS HAPPEN IN THE PR BEFORE MERGING TO DEVELOP**
 
-### Why This Matters
-- User tests the develop branch images with Docker
-- Version tracking files (version.json) must match actual package.json versions
-- The version-manager UI shows "verified" vs "registered" based on these files matching develop
-- Testing happens BEFORE release branches and tags are created
+This ensures develop branch is always testable with correct version numbers.
 
-### For Every Service Release PR
+## Simple Release Workflow
 
-**BEFORE merging to develop, the PR MUST include:**
+### 1. Create Feature PR
+```bash
+# In service directory (backend, frontend, scraper)
+git checkout -b feature/my-feature
+# Implement feature with tests
+# Bump version in package.json manually
+git add .
+git commit -m "Add my feature"
+git push -u origin feature/my-feature
+gh pr create --base develop
+```
 
-1. **Feature implementation**
-2. **Version bump in package.json** to the release version (e.g., 2.0.2 → 2.1.0)
-3. **Updated version tracking files** (if infrastructure or version-manager)
+### 2. Version Bumps Required
 
-### Version-Manager and Infrastructure
+**For EVERY service release, these services MUST be bumped:**
 
-**These services ALWAYS get bumped when any service releases:**
-- version-manager: Gets patch bump for compatibility tracking
-- infrastructure: Matches application version (not independent)
+| Service | Bump Type | Why |
+|---------|-----------|-----|
+| **Releasing service** | As appropriate (major/minor/patch) | The feature being released |
+| **version-manager** | Always patch | Needs to track new compatibility combo |
+| **infrastructure** | Only if docs changed | Infrastructure docs updated |
 
-### Example: v2.1.0 Release
+**Example: Backend v2.0.2 → v2.1.0 (minor feature)**
+- ✅ backend/package.json: `"version": "2.1.0"`
+- ✅ version-manager/package.json: `"version": "1.1.4"` (was 1.1.3)
+- ✅ version-manager/version.json: Update all versions
+- ✅ infrastructure/package.json: Only if docs changed
 
-**Backend PR #71 should have included:**
-- Atlas Search feature
-- package.json: `"version": "2.1.0"` ✓ (MUST be in PR)
+### 3. Update version.json (in version-manager repo)
 
-**Frontend PR #74 should have included:**
-- Dark mode feature
-- package.json: `"version": "2.1.0"` ✓ (MUST be in PR)
+**SINGLE SOURCE OF TRUTH**: `version-manager/version.json`
 
-**Version-Manager PR #49 should have included:**
-- v2.1.0 compatibility tracking
-- package.json: `"version": "1.1.4"` ✓ (MUST be in PR)
+Edit manually to update:
+```json
+{
+  "application": {
+    "version": "2.1.0",
+    "releaseDate": "15-Nov-2025"
+  },
+  "services": {
+    "backend": { "version": "2.1.0", "dockerImage": "backend:v2.1.0" },
+    "frontend": { "version": "2.1.0", "dockerImage": "frontend:v2.1.0" },
+    "scraper": { "version": "2.0.3", "dockerImage": "scraper:v2.0.3" },
+    "version-manager": { "version": "1.1.4", "dockerImage": "version-manager:v1.1.4" }
+  },
+  "compatibility": {
+    "testedCombinations": [
+      {
+        "backend": "2.1.0",
+        "frontend": "2.1.0",
+        "scraper": "2.0.3",
+        "version-manager": "1.1.4",
+        "verified": null,
+        "notes": "v2.1.0 release: Backend Atlas Search + Frontend Dark Mode"
+      }
+    ]
+  }
+}
+```
 
-**Infrastructure commits should have included:**
-- version.json updated to v2.1.0
+### 4. Merge and Test
+1. Merge PRs to develop
+2. Docker builds trigger automatically
+3. Test develop branch Docker images
+4. Update `verified` field in version.json to release date once testing passes
 
-## Workflow Summary
+### 5. Create Release
+```bash
+# After testing succeeds on develop
+git checkout -b release/v2.1.0
+git push -u origin release/v2.1.0
+gh pr create --base main --title "Release v2.1.0"
 
-1. **Create feature branch** from develop
-2. **Implement feature** with tests
-3. **Bump package.json version** to release version
-4. **Update version tracking** (if infra/version-manager)
-5. **Create PR to develop**
-6. **Merge PR** (versions already bumped)
-7. **User tests develop** with correct versions
-8. **After testing succeeds**, update `"released": "date"` in version.json testedCombinations
-9. **Create release branches** from develop
-10. **Tag releases** and merge to main
+# After merge to main, tag it
+git checkout main
+git pull
+git tag -a v2.1.0 -m "Release v2.1.0"
+git push origin v2.1.0
+```
 
 ## What NOT to Do
 
-❌ Merge PR with old version, then bump version on develop afterward
-❌ Commit directly to develop for version bumps
-❌ Forget to bump version-manager when other services release
-❌ Forget to update version tracking files
+❌ Merge PR without version bumps
+❌ Commit directly to develop
+❌ Forget to bump version-manager
+❌ Use old bump scripts (deleted)
+❌ Create multiple version.json files
 
-## Version Tracking File
+## Troubleshooting
 
-Located in `figure-collector-infra/`:
+### "Unknown" showing in version footer
+This means version.json is missing data (releaseDate null, version mismatch, etc.). Fix the data in version.json, don't hide the warning.
 
-### version.json (Single Source of Truth)
-- **ONLY** version source for Docker deployments and all services
-- Tracks all service versions and compatibility matrix
-- Must match package.json versions on develop
-- **CRITICAL**: Version-manager Docker container loads this file
-- Updated by `scripts/version-manager.sh` bump script
+### Docker container won't start
+Check version.json is valid JSON and contains all required service entries.
 
-**Fields to update for each release:**
-- `.application.version` - Application release version
-- `.application.releaseDate` - Set to release date (or `null` if pending)
-- `.services.*.version` - Each service's version
-- `.services.*.dockerImage` - Docker image tags
-- `.dependencies.*` - Service dependency versions
-- `.compatibility.testedCombinations` - Add new combination with `verified: null` (or date)
+### Version mismatch after merge
+Version bumps weren't in the PR. Create new PR with correct versions.
 
-## Mistakes Made (Nov 2025)
+## Simplified Architecture
 
-### Mistake #1: Version Bumps Not in PRs
-During v2.1.0 release, PRs were merged WITHOUT version bumps in package.json:
-- Backend merged at 2.0.2, should have been 2.1.0
-- Frontend merged at 2.0.2, should have been 2.1.0
-- Had to fix afterward with direct commits to develop (wrong!)
+```
+version-manager/version.json  ← SINGLE SOURCE OF TRUTH
+  ↓
+All services read from here (via version-manager service)
+  ↓
+Frontend displays in footer
+```
 
-**Lesson:** Always bump versions IN THE PR before merging.
+**No more:**
+- ❌ Bump scripts
+- ❌ infrastructure/version.json
+- ❌ Multiple version tracking files
+- ❌ Complex sync processes
 
-### Mistake #2: Created Duplicate Version Tracking File
-During version tracking file updates:
-- Created `application-versions.json` as duplicate/secondary tracking file
-- Only updated application-versions.json to v2.1.0
-- **FORGOT** to update version.json to v2.1.0
-- Version-manager Docker container failed to start (JSON parsing error)
-- Docker deployment couldn't test because version.json had wrong versions
-
-**Lesson:** Maintain only ONE version tracking file (`version.json`). Multiple version files cause sync issues and deployment failures. The `application-versions.json` file has been **deleted** to prevent future confusion.
-
-### Mistake #3: Committed Directly to Develop
-Fixed the version.json issue by committing directly to develop instead of creating a PR:
-- Bypassed CI/CD workflow (no Docker builds triggered)
-- Bypassed PR review process
-- Violated the protected branch workflow
-- Deployment still broken because no new Docker images were built
-
-**Lesson:** ALWAYS create a PR, even for urgent fixes. Direct commits bypass critical CI/CD steps.
+**Just:**
+- ✅ Manual version bumps in package.json
+- ✅ Manual updates to version-manager/version.json
+- ✅ Simple, visible, reviewable

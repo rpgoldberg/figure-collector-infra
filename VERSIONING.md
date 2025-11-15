@@ -2,288 +2,196 @@
 
 ## Overview
 
-This document outlines the versioning strategy for the Figure Collector microservices architecture.
+Each service maintains its own independent version in `package.json`. The application version is set via environment variable for coordinated releases.
 
-## Versioning Approach
+## Semantic Versioning
 
-### Synchronized Versioning (Current)
-All services maintain synchronized major versions for consistency and compatibility:
-- **Application Version**: Overall release version (v1.0.0)
-- **Service Versions**: Individual service versions (v1.0.0 each)
+All services follow [Semantic Versioning 2.0.0](https://semver.org/):
 
-### Version Types
+### Version Format: `MAJOR.MINOR.PATCH`
 
-#### Major Version (X.0.0)
-- Breaking API changes
-- Database schema changes
-- Architectural changes
-- All services bump together
+- **MAJOR** (X.0.0): Breaking changes, incompatible API changes
+- **MINOR** (1.X.0): New features, backward-compatible
+- **PATCH** (1.0.X): Bug fixes, backward-compatible
 
-#### Minor Version (1.X.0)
-- New features (backward compatible)
-- New API endpoints
-- Can be independent per service
+## Service Versioning
 
-#### Patch Version (1.0.X)
-- Bug fixes
-- Security patches
-- Performance improvements
-- Independent per service
+### Each Service Owns Its Version
 
-## Version Management
+**Services version independently:**
+- backend/package.json
+- frontend/package.json
+- scraper/package.json
+- infrastructure/package.json (docs only, no code)
 
-### Auto-Initialization for New Services
+**Update version manually in package.json:**
+```json
+{
+  "name": "figure-collector-backend",
+  "version": "2.1.0"
+}
+```
 
-The version manager automatically handles new services:
+### When to Bump Versions
+
+| Change Type | Version Bump | Example |
+|-------------|--------------|---------|
+| Bug fix | PATCH | 2.0.0 → 2.0.1 |
+| New feature (compatible) | MINOR | 2.0.0 → 2.1.0 |
+| Breaking change | MAJOR | 2.0.0 → 3.0.0 |
+
+## Application Versioning
+
+**Application version** represents coordinated releases across services.
+
+### Set in docker-compose.yml
+
+```yaml
+services:
+  backend:
+    environment:
+      - APP_VERSION=2.1.0
+      - APP_RELEASE_DATE=15-Nov-2025
+```
+
+### When to Update Application Version
+
+Update when doing a **coordinated release** (multiple services):
+- Backend v2.1.0 + Frontend v2.1.0 = **Application v2.1.0**
+
+For single-service releases, **no application version change needed**:
+- Just scraper v2.0.4 = Application version stays 2.1.0
+
+## Release Workflow
+
+### 1. Single Service Release
 
 ```bash
-# If service doesn't exist in version.json, it's auto-created with v1.0.0
-./scripts/version-manager.sh bump my-new-service minor
-# Output: Service 'my-new-service' not found, will initialize with v1.0.0
-# Result: my-new-service v1.0.0 → v1.1.0
+# In service directory
+git checkout -b feature/my-feature
+
+# Implement feature with tests
+npm test
+
+# Bump version in package.json manually
+# Edit package.json: "version": "2.1.0"
+
+git add package.json
+git commit -m "Add my feature"
+git push -u origin feature/my-feature
+gh pr create --base develop
 ```
 
-**Default Structure for New Services:**
-- Version: `1.0.0`
-- Repository: Same as service name
-- Docker Image: `service-name:v1.0.0`
-- Ownership: `platform` (can be manually changed to `figure-collector`)
-- Coupling: `[]` (independent by default)
-
-### Using the Version Manager
+### 2. Coordinated Release (Multiple Services)
 
 ```bash
-# Show current versions
-./scripts/version-manager.sh show
+# Bump each affected service's package.json
+# backend/package.json: 2.0.2 → 2.1.0
+# frontend/package.json: 2.0.2 → 2.1.0
 
-# Bump specific service (independent versioning)
-./scripts/version-manager.sh bump backend patch
-./scripts/version-manager.sh bump frontend minor
+# Update application version in infrastructure repo
+# docker-compose.yml: APP_VERSION=2.1.0
 
-# Bump new service (auto-creates with v1.0.0 default)
-./scripts/version-manager.sh bump new-service minor
-
-# Create application release (coordinates current service versions)
-./scripts/version-manager.sh app-release 1.1.0
-
-# Sync environment files with current versions
-./scripts/version-manager.sh sync
-
-# Check version compatibility
-./scripts/version-manager.sh check
+# Merge all service PRs to develop
+# Test develop branch
+# Create release branches from develop
+# Tag release in infrastructure repo
+git tag -a v2.1.0 -m "Application Release v2.1.0"
 ```
 
-### Release Process
+## Version Display
 
-#### 1. Development Phase
-- Work on feature branches
-- Use `latest` tags for development builds
-- Services can have different patch versions
+Services expose their version via `/health` endpoint:
 
-#### 2. Pre-Release Phase
-```bash
-# Prepare release candidate
-./scripts/version-manager.sh app-release 1.1.0-rc1
-
-# Test in staging environment
-./deploy.sh test
+```javascript
+// Each service
+app.get('/health', (req, res) => {
+  res.json({
+    service: 'backend',
+    version: require('./package.json').version,
+    status: 'healthy'
+  });
+});
 ```
 
-#### 3. Release Phase
-```bash
-# Final release preparation
-./scripts/version-manager.sh app-release 1.1.0
+Backend aggregates and serves `/version` for the frontend:
 
-# Review changes
-git diff
-
-# Commit and tag
-git add .
-git commit -m "Release v1.1.0"
-git tag v1.1.0
-git push origin main --tags
+```javascript
+app.get('/version', async (req, res) => {
+  res.json({
+    application: {
+      version: process.env.APP_VERSION,
+      releaseDate: process.env.APP_RELEASE_DATE
+    },
+    services: {
+      backend: { version: require('./package.json').version },
+      // ... aggregate from other services' /health endpoints
+    }
+  });
+});
 ```
 
-#### 4. Service-Specific Tags
-Tag each service repository:
-```bash
-# In each service repository
-git tag v1.1.0
-git push origin v1.1.0
-```
+## Breaking Changes
 
-## Git Flow Integration
+When making breaking changes:
 
-### Branch Strategy
-```
-main (production)
-  ↑
-develop (integration)
-  ↑
-feature/xyz (development)
-```
+1. **Bump MAJOR version** (e.g., 2.1.0 → 3.0.0)
+2. **Document breaking changes** in PR description
+3. **Update dependent services** in same release
+4. **Consider API versioning** (/api/v1/, /api/v2/) for gradual migration
 
-### Version Tagging
-- **main branch**: Production releases (v1.0.0, v1.1.0)
-- **develop branch**: Release candidates (v1.1.0-rc1)
-- **feature branches**: Development builds (latest, feature-xyz)
+## Migration from Old System
 
-## Environment-Specific Versioning
+**What changed:**
+- ❌ Removed: version-manager service
+- ❌ Removed: version.json file
+- ❌ Removed: Bump scripts
+- ❌ Removed: Service registration
 
-### Development
-```bash
-BACKEND_TAG=latest
-FRONTEND_TAG=latest
-SCRAPER_TAG=latest
-VERSION_MANAGER_TAG=latest
-INTEGRATION_TESTS_TAG=latest
-```
-
-### Test/Staging
-```bash
-BACKEND_TAG=v1.1.0-rc1
-FRONTEND_TAG=v1.1.0-rc1
-SCRAPER_TAG=v1.1.0-rc1
-VERSION_MANAGER_TAG=v1.1.0-rc1
-INTEGRATION_TESTS_TAG=v1.1.0-rc1
-```
-
-### Production
-```bash
-BACKEND_TAG=v1.1.0
-FRONTEND_TAG=v1.1.0
-SCRAPER_TAG=v1.1.0
-VERSION_MANAGER_TAG=v1.1.0
-INTEGRATION_TESTS_TAG=v1.1.0
-```
-
-## Docker Image Tagging Strategy
-
-### Image Naming Convention
-```
-registry/figure-collector-backend:v1.1.0
-registry/figure-collector-frontend:v1.1.0
-registry/page-scraper:v1.1.0
-registry/version-manager:v1.1.0
-registry/integration-tests:v1.1.0
-```
-
-### Multi-Tag Strategy
-Each release gets multiple tags:
-```bash
-# Specific version
-docker tag app:build app:v1.0.0
-
-# Latest stable
-docker tag app:build app:latest
-
-# Major version latest
-docker tag app:build app:v1
-```
-
-## API Versioning
-
-### URL Versioning (Recommended)
-```
-/api/v1/figures
-/api/v1/users
-/api/v1/scraper
-```
-
-### Header Versioning (Alternative)
-```
-Accept: application/vnd.figure-collector.v1+json
-```
-
-## Database Versioning
-
-### Migration Strategy
-- **Major versions**: May require data migration
-- **Minor versions**: Backward-compatible schema changes
-- **Patch versions**: No schema changes
-
-### Environment Databases
-- `figure-collector`: Production
-- `figure-collector-test`: Testing/staging  
-- `figure-collector-dev`: Development
-
-## Compatibility Matrix
-
-### Service Compatibility
-| Backend | Frontend | Scraper | Compatible |
-|---------|----------|---------|------------|
-| v1.0.x  | v1.0.x   | v1.0.x  | ✅ |
-| v1.1.x  | v1.0.x   | v1.0.x  | ✅ |
-| v2.0.x  | v1.x.x   | v1.x.x  | ❌ |
-
-## Troubleshooting
-
-### Version Conflicts
-```bash
-# Check current versions and compatibility
-./scripts/version-manager.sh show
-./scripts/version-manager.sh check
-
-# Sync environment files
-./scripts/version-manager.sh sync
-
-# Reset to known good state
-git checkout v1.0.0
-```
-
-### Adding New Services
-```bash
-# New services auto-initialize with v1.0.0
-./scripts/version-manager.sh bump new-service patch
-# Creates: new-service v1.0.0 → v1.0.1
-
-# Manually add to existing application release
-./scripts/version-manager.sh app-release 1.2.0
-```
-
-### Missing Version Data
-If `version.json` is corrupted or missing service data:
-```bash
-# Services default to v1.0.0 automatically
-./scripts/version-manager.sh bump missing-service minor
-# Auto-creates with proper structure
-```
-
-### Rollback Strategy
-```bash
-# Rollback to previous version
-docker-compose down
-# Update .env files to previous version
-docker-compose up -d
-```
+**New approach:**
+- ✅ Manual version bumps in package.json
+- ✅ Application version in docker-compose.yml environment
+- ✅ Self-reporting via /health endpoints
+- ✅ Simple, transparent, reviewable
 
 ## Best Practices
 
-### DO
-- ✅ Use semantic versioning consistently
-- ✅ Tag all releases in git
-- ✅ Test version compatibility
-- ✅ Document breaking changes
-- ✅ Use specific versions in production
-- ✅ Let new services auto-initialize with v1.0.0
-- ✅ Use `app-release` to coordinate service versions
+### Always Bump Version in PR (Before Merge)
+```bash
+# ✅ Good: Version bump IN the PR
+feature/add-search → develop
+  - Add search feature
+  - package.json: "version": "2.1.0"
 
-### DON'T  
-- ❌ Use `latest` in production
-- ❌ Skip version testing
-- ❌ Make breaking changes in minor versions
-- ❌ Deploy untested version combinations
-- ❌ Manually edit version.json (use the script instead)
+# ❌ Bad: Version bump after merge
+feature/add-search → develop (version still 2.0.2)
+  → Then commit to develop to bump version
+```
 
-## Future Considerations
+### Use Conventional Commits (Optional)
+```bash
+feat: add Atlas Search support  # → MINOR bump
+fix: correct authentication bug  # → PATCH bump
+feat!: redesign API endpoints   # → MAJOR bump
+```
 
-### Independent Service Versioning
-As the system grows, consider moving to independent service versioning:
-- Each service maintains its own version lifecycle
-- API contracts define compatibility
-- Service mesh for version routing
+### Tag Releases in Git
+```bash
+# Service tags
+git tag -a backend-v2.1.0 -m "Backend v2.1.0"
 
-### Automated Version Management
-- CI/CD integration for version bumping
-- Automated compatibility testing
-- Semantic release automation
+# Application tags (in infrastructure repo)
+git tag -a v2.1.0 -m "Application v2.1.0"
+```
+
+## Troubleshooting
+
+### Version not showing in UI
+- Check `/version` endpoint returns data
+- Check APP_VERSION environment variable is set
+- Check backend is aggregating from services correctly
+
+### Service shows wrong version
+- Check package.json has correct version
+- Check service was rebuilt after version change
+- Check Docker image tag matches version
